@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SofaScore Feed Prototype</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    body { background: #D0D4E8; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; }
+    button:active { opacity: 0.82; }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ─── SofaScore Brand Tokens ───────────────────────────────────────────────
+    const SS = {
+      blue:        "#374DF5",
+      blueDark:    "#2336CC",
+      blueLight:   "#EEF0FE",
+      blueMid:     "#6B7FF7",
+      surface:     "#FFFFFF",
+      bg:          "#F4F5F9",
+      ink:         "#0D1117",
+      inkMid:      "#4A5568",
+      inkLight:    "#9AA0AB",
+      border:      "#EAECF0",
+      live:        "#FF3B30",
+      liveLight:   "#FFF0EF",
+      green:       "#00B848",
+      greenLight:  "#E6F9EE",
+      yellow:      "#F5A623",
+      yellowLight: "#FEF9EC",
+      red:         "#FF3B30",
+      redLight:    "#FFF0EF",
+      radius:      16,
+      radiusSm:    10,
+    };
+
+    // ─── Prediction Types ─────────────────────────────────────────────────────
+    const PRED_TYPES = {
+      winner:         { label: "Who will win?",                          icon: "🏆", getOptions: (h,a) => [h, "Draw", a] },
+      result:         { label: "What will the result be?",               icon: "🎯", getOptions: (h,a) => [`${h} 1–0`, `${h} 2–0`, `${h} 2–1`, "0–0", `${a} 1–0`, `${a} 2–0`, `${a} 2–1`] },
+      firstGoalTime:  { label: "When is the first goal scored?",         icon: "⏱️", getOptions: () => ["0–15'","16–30'","31–45'","46–60'","61–75'","76–90'","No goals"] },
+      firstYellow:    { label: "Which team gets the first yellow card?",  icon: "🟨", getOptions: (h,a) => [h, a, "No yellows"] },
+      firstCorner:    { label: "Which team wins the first corner?",       icon: "🚩", getOptions: (h,a) => [h, a] },
+      extraTime:      { label: "Will there be extra time?",               icon: "⌛", getOptions: () => ["Yes","No"] },
+      firstGoalScorer:{ label: "Who scores the first goal?",              icon: "⚽", getOptions: () => ["Haaland","Saka","Ødegaard","Foden","De Bruyne","No goal"] },
+    };
+
+    // ─── Feed Data ────────────────────────────────────────────────────────────
+    const FEED_DATA = [
+      { id:1,  type:"winner",          user:{name:"Marco Rossi",  avatar:"MR", color:"#374DF5"}, friends:["Jana K.","Luka P."], match:{home:"Man City",    away:"Arsenal",   homeBadge:"🔵", awayBadge:"🔴", homeScore:1, awayScore:0, minute:"34", live:true},  userPick:"Man City",    agree:142, disagree:38,  userVote:null,       comments:21, time:"2m"       },
+      { id:2,  type:"firstYellow",     user:{name:"Jana Kovač",   avatar:"JK", color:"#9B59B6"}, friends:[],                   match:{home:"Real Madrid", away:"Barcelona", homeBadge:"⚪", awayBadge:"🔵", homeScore:2, awayScore:2, minute:"78", live:true},  userPick:"Barcelona",   agree:311, disagree:74,  userVote:"agree",    comments:55, time:"8m"       },
+      { id:3,  type:"result",          user:{name:"Tomáš Novák",  avatar:"TN", color:"#00B848"}, friends:["Marco R."],          match:{home:"Bayern",      away:"Dortmund",  homeBadge:"🔴", awayBadge:"🟡", homeScore:null,awayScore:null,kickoff:"20:45",live:false},userPick:"Bayern 2–0",  agree:89,  disagree:107, userVote:"disagree", comments:34, time:"1h"       },
+      { id:4,  type:"firstGoalTime",   user:{name:"Luka Perić",   avatar:"LP", color:"#FF3B30"}, friends:["Tomáš N.","Jana K."],match:{home:"Liverpool",   away:"Chelsea",   homeBadge:"🔴", awayBadge:"🔵", homeScore:0, awayScore:0, minute:"HT", live:false}, userPick:"No goals",    agree:203, disagree:61,  userVote:null,       comments:42, time:"45m"      },
+      { id:5,  type:"firstCorner",     user:{name:"Ana Flores",   avatar:"AF", color:"#F5A623"}, friends:[],                   match:{home:"PSG",         away:"Monaco",    homeBadge:"🔵", awayBadge:"⚪", homeScore:3, awayScore:1, minute:"89", live:true},  userPick:"PSG",         agree:456, disagree:22,  userVote:null,       comments:88, time:"Just now" },
+      { id:6,  type:"extraTime",       user:{name:"Danko T.",     avatar:"DT", color:"#374DF5"}, friends:["Ana F."],            match:{home:"Real Madrid", away:"Barcelona", homeBadge:"⚪", awayBadge:"🔵", homeScore:2, awayScore:2, minute:"78", live:true},  userPick:"Yes",         agree:178, disagree:95,  userVote:null,       comments:29, time:"10m"      },
+      { id:7,  type:"firstGoalScorer", user:{name:"Marco Rossi",  avatar:"MR", color:"#374DF5"}, friends:[],                   match:{home:"Man City",    away:"Arsenal",   homeBadge:"🔵", awayBadge:"🔴", homeScore:1, awayScore:0, minute:"34", live:true},  userPick:"Haaland",     agree:289, disagree:54,  userVote:null,       comments:37, time:"5m"       },
+    ];
+
+    const LIVE_MATCHES = [
+      {home:"MCI",away:"ARS",score:"1–0",min:"34'"},
+      {home:"RMA",away:"FCB",score:"2–2",min:"78'"},
+      {home:"PSG",away:"MON",score:"3–1",min:"89'"},
+    ];
+
+    // ─── Components ───────────────────────────────────────────────────────────
+    function Avatar({initials, color, size=36}) {
+      return (
+        <div style={{width:size,height:size,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:size*0.35,fontWeight:700,flexShrink:0}}>
+          {initials}
+        </div>
+      );
+    }
+
+    function MatchChip({match}) {
+      const isLive = match.live;
+      const hasScore = match.homeScore !== null;
+      return (
+        <div style={{background:isLive?SS.liveLight:SS.bg,border:`1px solid ${isLive?"#FFCFCC":SS.border}`,borderRadius:SS.radiusSm,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
+            <span style={{fontSize:15}}>{match.homeBadge}</span>
+            <span style={{fontSize:12,fontWeight:600,color:SS.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.home}</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"0 10px",flexShrink:0}}>
+            {hasScore
+              ? <span style={{fontSize:15,fontWeight:800,color:isLive?SS.live:SS.ink}}>{match.homeScore} – {match.awayScore}</span>
+              : <span style={{fontSize:11,fontWeight:700,color:SS.blue}}>{match.kickoff}</span>
+            }
+            {isLive && match.minute!=="HT"
+              ? <div style={{display:"flex",alignItems:"center",gap:3,background:SS.live,borderRadius:20,padding:"1px 6px",marginTop:2}}>
+                  <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",display:"inline-block",animation:"pulse 1.4s infinite"}}/>
+                  <span style={{fontSize:9,fontWeight:800,color:"#fff",letterSpacing:0.5}}>{match.minute}'</span>
+                </div>
+              : match.minute==="HT"
+                ? <span style={{fontSize:9,fontWeight:700,color:SS.inkMid,marginTop:2}}>HT</span>
+                : <span style={{fontSize:9,color:SS.inkLight,marginTop:2}}>Today</span>
+            }
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flex:1,justifyContent:"flex-end",minWidth:0}}>
+            <span style={{fontSize:12,fontWeight:600,color:SS.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textAlign:"right"}}>{match.away}</span>
+            <span style={{fontSize:15}}>{match.awayBadge}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function PredictionOptions({predType, home, away, userPick}) {
+      const def = PRED_TYPES[predType];
+      const options = def.getOptions ? def.getOptions(home, away) : [];
+      return (
+        <div style={{marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:9}}>
+            <span style={{fontSize:16}}>{def.icon}</span>
+            <span style={{fontSize:13,fontWeight:700,color:SS.ink}}>{def.label}</span>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+            {options.map(opt => {
+              const isPick = opt === userPick;
+              return (
+                <div key={opt} style={{padding:"7px 13px",borderRadius:20,fontSize:12,fontWeight:isPick?700:500,background:isPick?SS.ink:SS.bg,color:isPick?"#fff":SS.inkMid,border:`1.5px solid ${isPick?SS.ink:SS.border}`,display:"flex",alignItems:"center",gap:5,transition:"all 0.15s"}}>
+                  {isPick && <span style={{fontSize:10}}>✓</span>}
+                  {opt}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function FeedCard({item}) {
+      const [votes, setVotes] = useState({agree:item.agree, disagree:item.disagree});
+      const [userVote, setUserVote] = useState(item.userVote);
+
+      const handleVote = (type) => {
+        setVotes(prev => {
+          const next = {...prev};
+          if (userVote === type) { next[type] -= 1; }
+          else { if (userVote) next[userVote] -= 1; next[type] += 1; }
+          return next;
+        });
+        setUserVote(prev => prev === type ? null : type);
+      };
+
+      const total = votes.agree + votes.disagree;
+      const agreePct = total > 0 ? Math.round((votes.agree/total)*100) : 50;
+
+      return (
+        <div style={{background:SS.surface,borderRadius:SS.radius,marginBottom:10,boxShadow:"0 1px 6px rgba(55,77,245,0.07)",border:`1px solid ${SS.border}`,overflow:"hidden"}}>
+          <div style={{padding:"14px 14px 12px"}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:11}}>
+              <Avatar initials={item.user.avatar} color={item.user.color} size={36}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontWeight:700,fontSize:13.5,color:SS.ink}}>{item.user.name}</span>
+                  <span style={{background:SS.blueLight,color:SS.blue,fontSize:9.5,fontWeight:800,padding:"2px 7px",borderRadius:20,letterSpacing:0.4}}>PREDICTION</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:4,marginTop:2}}>
+                  {item.friends.length>0 && <span style={{fontSize:11,color:SS.inkLight}}>with {item.friends.join(", ")} · </span>}
+                  <span style={{fontSize:11,color:SS.inkLight}}>{item.time}</span>
+                </div>
+              </div>
+              <button style={{background:"none",border:"none",cursor:"pointer",color:SS.inkLight,fontSize:18,padding:4}}>⋯</button>
+            </div>
+
+            <MatchChip match={item.match}/>
+            <PredictionOptions predType={item.type} home={item.match.home} away={item.match.away} userPick={item.userPick}/>
+
+            {/* Agreement bar */}
+            <div style={{marginBottom:12}}>
+              <div style={{height:4,borderRadius:10,background:SS.redLight,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${agreePct}%`,background:`linear-gradient(90deg,${SS.blue},${SS.blueMid})`,borderRadius:10,transition:"width 0.35s ease"}}/>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                <span style={{fontSize:10,fontWeight:700,color:SS.blue}}>{agreePct}% Agree</span>
+                <span style={{fontSize:10,fontWeight:700,color:SS.red}}>{100-agreePct}% Disagree</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{display:"flex",gap:7}}>
+              <button onClick={()=>handleVote("agree")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 0",borderRadius:SS.radiusSm,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,transition:"all 0.15s",background:userVote==="agree"?SS.blue:SS.blueLight,color:userVote==="agree"?"#fff":SS.blue}}>
+                <span style={{fontSize:14}}>👍</span>{votes.agree.toLocaleString()}
+              </button>
+              <button onClick={()=>handleVote("disagree")} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 0",borderRadius:SS.radiusSm,border:"none",cursor:"pointer",fontWeight:700,fontSize:13,transition:"all 0.15s",background:userVote==="disagree"?SS.red:SS.redLight,color:userVote==="disagree"?"#fff":SS.red}}>
+                <span style={{fontSize:14}}>👎</span>{votes.disagree.toLocaleString()}
+              </button>
+              <button style={{display:"flex",alignItems:"center",gap:5,padding:"9px 13px",borderRadius:SS.radiusSm,border:"none",cursor:"pointer",background:SS.bg,color:SS.inkMid,fontSize:12,fontWeight:600}}>
+                <span style={{fontSize:14}}>💬</span>{item.comments}
+              </button>
+              <button style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"9px 12px",borderRadius:SS.radiusSm,border:"none",cursor:"pointer",background:SS.bg,fontSize:15,color:SS.inkLight}}>↗</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function LiveStrip() {
+      return (
+        <div style={{display:"flex",gap:8,overflowX:"auto",padding:"10px 14px",scrollbarWidth:"none"}}>
+          {LIVE_MATCHES.map((m,i) => (
+            <div key={i} style={{background:SS.surface,border:`1px solid ${SS.border}`,borderRadius:SS.radiusSm,padding:"8px 12px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:90,flexShrink:0,boxShadow:"0 1px 4px rgba(55,77,245,0.06)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <span style={{width:5,height:5,borderRadius:"50%",background:SS.live,display:"inline-block",animation:"pulse 1.4s infinite"}}/>
+                <span style={{fontSize:9,fontWeight:700,color:SS.live}}>{m.min}</span>
+              </div>
+              <span style={{fontSize:13,fontWeight:800,color:SS.ink}}>{m.score}</span>
+              <span style={{fontSize:9.5,fontWeight:600,color:SS.inkMid}}>{m.home} – {m.away}</span>
+            </div>
+          ))}
+          <div style={{minWidth:72,flexShrink:0,background:SS.blueLight,border:"1px solid #D4D9FC",borderRadius:SS.radiusSm,padding:"8px 10px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+            <span style={{fontSize:16}}>+</span>
+            <span style={{fontSize:9.5,fontWeight:700,color:SS.blue}}>All Live</span>
+          </div>
+        </div>
+      );
+    }
+
+    function PredictionPicker({onClose}) {
+      const [step, setStep] = useState(0);
+      const [selectedType, setSelectedType] = useState(null);
+      const [selectedOpt, setSelectedOpt] = useState(null);
+      const exampleMatch = {home:"Man City", away:"Arsenal"};
+      const types = Object.entries(PRED_TYPES);
+
+      return (
+        <div style={{position:"absolute",bottom:0,left:0,right:0,background:SS.surface,borderRadius:"20px 20px 0 0",padding:"16px 16px 28px",boxShadow:"0 -4px 30px rgba(0,0,0,0.15)",zIndex:10}}>
+          <div style={{width:36,height:4,background:SS.border,borderRadius:10,margin:"0 auto 16px"}}/>
+
+          {step===0 && (
+            <>
+              <div style={{fontWeight:800,fontSize:15,color:SS.ink,marginBottom:14}}>Choose prediction type</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {types.map(([key,def]) => (
+                  <button key={key} onClick={()=>{setSelectedType(key);setSelectedOpt(null);setStep(1);}} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:SS.radiusSm,border:`1.5px solid ${SS.border}`,background:SS.bg,cursor:"pointer",textAlign:"left"}}>
+                    <span style={{fontSize:20}}>{def.icon}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:SS.ink}}>{def.label}</span>
+                    <span style={{marginLeft:"auto",color:SS.inkLight,fontSize:14}}>›</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {step===1 && selectedType && (
+            <>
+              <button onClick={()=>setStep(0)} style={{background:"none",border:"none",cursor:"pointer",color:SS.blue,fontSize:13,fontWeight:600,marginBottom:12,padding:0}}>‹ Back</button>
+              <div style={{fontWeight:800,fontSize:15,color:SS.ink,marginBottom:4}}>{PRED_TYPES[selectedType].icon} {PRED_TYPES[selectedType].label}</div>
+              <div style={{fontSize:11,color:SS.inkLight,marginBottom:14}}>Man City vs Arsenal</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:18}}>
+                {(PRED_TYPES[selectedType].getOptions(exampleMatch.home,exampleMatch.away)||[]).map(opt=>{
+                  const sel = opt===selectedOpt;
+                  return (
+                    <button key={opt} onClick={()=>setSelectedOpt(opt)} style={{padding:"9px 16px",borderRadius:20,fontSize:13,fontWeight:sel?700:600,background:sel?SS.ink:SS.blueLight,color:sel?"#fff":SS.blue,border:`1.5px solid ${sel?SS.ink:SS.blue}`,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                      {sel && <span style={{fontSize:10}}>✓</span>}{opt}
+                    </button>
+                  );
+                })}
+              </div>
+              <button onClick={onClose} disabled={!selectedOpt} style={{width:"100%",padding:"13px",background:selectedOpt?SS.blue:"#ccc",border:"none",borderRadius:SS.radiusSm,color:"#fff",fontWeight:700,fontSize:14,cursor:selectedOpt?"pointer":"not-allowed"}}>
+                Post Prediction
+              </button>
+            </>
+          )}
+
+          <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:SS.bg,border:"none",borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:SS.inkLight,fontSize:14}}>✕</button>
+        </div>
+      );
+    }
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("For You");
+      const [activeNav, setActiveNav] = useState("Feed");
+      const [showPicker, setShowPicker] = useState(false);
+      const tabs = ["For You","Friends","Live","Predictions"];
+      const navItems = [{icon:"⚽",label:"Scores"},{icon:"📅",label:"Matches"},{icon:"👥",label:"Feed"},{icon:"🔍",label:"Search"},{icon:"👤",label:"Profile"}];
+
+      return (
+        <div style={{display:"flex",justifyContent:"center",alignItems:"flex-start",minHeight:"100vh",background:"#D0D4E8",padding:"24px 16px"}}>
+          <div style={{width:393,background:SS.bg,borderRadius:50,overflow:"hidden",boxShadow:"0 40px 100px rgba(0,0,0,0.30),0 0 0 10px #111",position:"relative"}}>
+
+            {/* Status bar */}
+            <div style={{background:SS.surface,padding:"14px 28px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:13,fontWeight:700,color:SS.ink}}>9:41</span>
+              <div style={{width:110,height:30,background:SS.ink,borderRadius:20,margin:"0 auto"}}/>
+              <span style={{fontSize:12,color:SS.ink}}>●●●</span>
+            </div>
+
+            {/* Header */}
+            <div style={{background:SS.surface}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px 12px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:30,height:30,background:SS.blue,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <span style={{fontSize:16}}>⚽</span>
+                  </div>
+                  <span>
+                    <span style={{fontWeight:800,fontSize:17,color:SS.ink,letterSpacing:-0.5}}>Sofa</span>
+                    <span style={{fontWeight:800,fontSize:17,color:SS.blue,letterSpacing:-0.5}}>Score</span>
+                  </span>
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  <button style={{width:34,height:34,borderRadius:"50%",border:"none",background:SS.bg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:16}}>🔔</button>
+                  <Avatar initials="DT" color={SS.blue} size={34}/>
+                </div>
+              </div>
+              <div style={{borderTop:`1px solid ${SS.border}`}}><LiveStrip/></div>
+              <div style={{display:"flex",borderTop:`1px solid ${SS.border}`,borderBottom:`1px solid ${SS.border}`}}>
+                {tabs.map(tab=>(
+                  <button key={tab} onClick={()=>setActiveTab(tab)} style={{flex:1,padding:"11px 4px",border:"none",background:"none",cursor:"pointer",fontSize:12,fontWeight:activeTab===tab?700:500,color:activeTab===tab?SS.blue:SS.inkLight,borderBottom:activeTab===tab?`2.5px solid ${SS.blue}`:"2.5px solid transparent",marginBottom:-1,transition:"all 0.2s"}}>{tab}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Feed */}
+            <div style={{overflowY:"auto",maxHeight:570,padding:"10px 10px 16px"}}>
+              <div style={{background:SS.surface,borderRadius:SS.radius,border:`1px solid ${SS.border}`,padding:"11px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:10,boxShadow:"0 1px 4px rgba(55,77,245,0.05)"}}>
+                <Avatar initials="DT" color={SS.blue} size={32}/>
+                <button onClick={()=>setShowPicker(true)} style={{flex:1,background:SS.bg,border:"none",borderRadius:20,padding:"9px 14px",color:SS.inkLight,fontSize:13,textAlign:"left",cursor:"pointer"}}>
+                  Make a prediction…
+                </button>
+                <button onClick={()=>setShowPicker(true)} style={{background:SS.blue,border:"none",borderRadius:SS.radiusSm,padding:"8px 14px",color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer"}}>Predict</button>
+              </div>
+              {FEED_DATA.map(item=><FeedCard key={item.id} item={item}/>)}
+            </div>
+
+            {/* Bottom nav */}
+            <div style={{background:SS.surface,borderTop:`1px solid ${SS.border}`,display:"flex",justifyContent:"space-around",padding:"10px 4px 20px"}}>
+              {navItems.map(({icon,label})=>{
+                const active = activeNav===label;
+                return (
+                  <button key={label} onClick={()=>setActiveNav(label)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,border:"none",background:"none",cursor:"pointer",color:active?SS.blue:SS.inkLight,minWidth:48}}>
+                    <span style={{fontSize:20}}>{icon}</span>
+                    <span style={{fontSize:9.5,fontWeight:active?700:500,letterSpacing:0.2}}>{label}</span>
+                    {active && <div style={{width:4,height:4,borderRadius:"50%",background:SS.blue,marginTop:-2}}/>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Picker overlay */}
+            {showPicker && (
+              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.4)",zIndex:9}} onClick={()=>setShowPicker(false)}>
+                <div onClick={e=>e.stopPropagation()}>
+                  <PredictionPicker onClose={()=>setShowPicker(false)}/>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App/>);
+  </script>
+</body>
+</html>
