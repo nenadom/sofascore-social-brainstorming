@@ -1,0 +1,145 @@
+name: Sync HTML files from Slack
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch HTML files from Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID }}
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "::warning::SLACK_BOT_TOKEN or SLACK_CHANNEL_ID not configured — skipping sync"
+            exit 0
+          fi
+
+          touch .slack-synced
+
+          page=1
+          has_more=true
+
+          while [ "$has_more" = "true" ]; do
+            response=$(curl -sf -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+              "https://slack.com/api/files.list?channel=$SLACK_CHANNEL_ID&count=100&page=$page")
+
+            ok=$(echo "$response" | jq -r '.ok')
+            if [ "$ok" != "true" ]; then
+              echo "::error::Slack API error: $(echo "$response" | jq -r '.error')"
+              exit 1
+            fi
+
+            echo "$response" | jq -r '
+              .files[]
+              | select(.name != null)
+              | select((.name | test("\\.html$"; "i")) or .filetype == "html")
+              | [.id, .name, .url_private_download] | @tsv
+            ' | while IFS=$'\t' read -r id name url; do
+              [ -z "$id" ] && continue
+
+              if grep -q "^$id " .slack-synced 2>/dev/null; then
+                echo "Already synced: $name"
+                continue
+              fi
+
+              # Sanitize filename: lowercase, replace spaces/special chars with hyphens
+              safe_name=$(echo "$name" | sed 's/[–—]/-/g; s/ /-/g; s/[^a-zA-Z0-9._-]//g' | tr '[:upper:]' '[:lower:]')
+              # Ensure .html extension
+              [[ "$safe_name" != *.html ]] && safe_name="${safe_name}.html"
+
+              echo "Downloading: $name -> $safe_name"
+              if curl -sf -H "Authorization: Bearer $SLACK_BOT_TOKEN" "$url" -o "$safe_name"; then
+                echo "$id $safe_name" >> .slack-synced
+                echo "Saved: $safe_name"
+              else
+                echo "::warning::Failed to download: $name"
+              fi
+            done
+
+            total_pages=$(echo "$response" | jq -r '.paging.pages // 1')
+            page=$((page + 1))
+            [ "$page" -gt "$total_pages" ] && has_more=false
+          done
+
+      - name: Regenerate index.html
+        run: |
+          cat > index.html << 'HEADER'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Sofascore Social — Prototypes</title>
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      background: #0a0e1a;
+                      color: #e0e4ef;
+                      min-height: 100vh;
+                      padding: 3rem 1.5rem;
+                  }
+                  .container { max-width: 720px; margin: 0 auto; }
+                  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+                  .subtitle { color: #8890a4; margin-bottom: 2.5rem; font-size: 0.95rem; }
+                  .card {
+                      display: block;
+                      background: #141825;
+                      border: 1px solid #1e2438;
+                      border-radius: 12px;
+                      padding: 1.25rem 1.5rem;
+                      margin-bottom: 1rem;
+                      text-decoration: none;
+                      color: inherit;
+                      transition: border-color 0.2s, background 0.2s;
+                  }
+                  .card:hover { border-color: #3a7bfd; background: #181d30; }
+                  .card h2 { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 0.35rem; }
+                  .card p { font-size: 0.85rem; color: #8890a4; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Sofascore Social — Prototypes</h1>
+                  <p class="subtitle">Interactive HTML prototypes exploring social and engagement features.</p>
+          HEADER
+
+          for f in *.html; do
+            [ "$f" = "index.html" ] && continue
+            [ -f "$f" ] || continue
+            title=$(grep -oP '(?<=<title>).*?(?=</title>)' "$f" | head -1)
+            [ -z "$title" ] && title="${f%.html}"
+            cat >> index.html << CARD
+                  <a class="card" href="$f">
+                      <h2>$title</h2>
+                  </a>
+          CARD
+          done
+
+          cat >> index.html << 'FOOTER'
+              </div>
+          </body>
+          </html>
+          FOOTER
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-sync: new prototypes from Slack"
+            git push
+          fi
