@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morning Digest Card — Feed Design</title>
+<style>
+  :root {
+    --bg: #0F0F13;
+    --surface: #1A1A24;
+    --surface2: #22222F;
+    --surface3: #2C2C3E;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --green: #00E676;
+    --blue: #448AFF;
+    --amber: #FFD740;
+    --red: #FF5252;
+    --purple: #CE93D8;
+    --text: #F0F0F8;
+    --text2: rgba(240,240,248,0.55);
+    --text3: rgba(240,240,248,0.32);
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ─── PAGE HEADER */
+  .page-header {
+    padding: 52px 48px 44px;
+    background: linear-gradient(160deg, #0D1B2A 0%, #12102A 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--amber);
+    margin-bottom: 12px;
+  }
+  .page-header h1 {
+    font-size: 38px; font-weight: 900; letter-spacing: -0.5px;
+    line-height: 1.1; margin-bottom: 12px;
+  }
+  .page-header p { font-size: 16px; color: var(--text2); max-width: 540px; }
+
+  /* ─── LAYOUT */
+  .container { max-width: 1140px; margin: 0 auto; padding: 0 40px; }
+  .section { padding: 52px 0 24px; }
+  .section-eyebrow {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--blue); margin-bottom: 10px;
+  }
+  .section h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 6px; }
+  .section .sub { font-size: 15px; color: var(--text2); margin-bottom: 30px; }
+
+  /* ─── TWO-COL DEMO LAYOUT */
+  .demo-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  .phone-wrap {
+    position: sticky;
+    top: 24px;
+  }
+  .phone-chrome {
+    background: #111118;
+    border: 1px solid var(--border2);
+    border-radius: 36px;
+    padding: 12px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .phone-inner {
+    background: var(--bg);
+    border-radius: 26px;
+    overflow: hidden;
+  }
+  .status-bar {
+    background: var(--surface);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 18px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .status-time { font-size: 13px; font-weight: 800; color: var(--text); }
+
+  /* ─── FEED CHROME */
+  .feed-top-bar {
+    background: var(--surface);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .feed-logo {
+    font-size: 14px; font-weight: 900; letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .feed-logo span { color: var(--green); }
+  .feed-tab-bar {
+    display: flex;
+    padding: 0 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 2px;
+  }
+  .feed-tab {
+    padding: 10px 12px;
+    font-size: 12px; font-weight: 600;
+    color: var(--text3);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .feed-tab.active { color: var(--text); border-bottom-color: var(--green); }
+
+  .feed-scroll { padding: 10px 10px 20px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* ══════════════════════════════════════════ MORNING DIGEST CARD */
+  .digest-card {
+    background: linear-gradient(145deg, #1C1C2E 0%, #1A1A28 100%);
+    border: 1px solid rgba(255,215,64,0.2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(255,215,64,0.05);
+    transition: border-color 0.2s;
+  }
+  .digest-card:hover { border-color: rgba(255,215,64,0.35); }
+
+  /* TOP STRIP — gradient banner */
+  .digest-banner {
+    background: linear-gradient(135deg, #1A1200 0%, #2A1F00 50%, #1A1200 100%);
+    padding: 12px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,215,64,0.12);
+  }
+  .digest-banner-left { display: flex; align-items: center; gap: 8px; }
+  .sun-icon { font-size: 18px; }
+  .digest-title-text {
+    font-size: 13px; font-weight: 800;
+    color: var(--amber);
+    letter-spacing: 0.02em;
+  }
+  .digest-date {
+    font-size: 11px; color: rgba(255,215,64,0.5); margin-top: 1px;
+  }
+  .digest-personalized {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,215,64,0.5);
+    background: rgba(255,215,64,0.08);
+    border: 1px solid rgba(255,215,64,0.15);
+    padding: 3px 8px; border-radius: 20px;
+  }
+
+  /* DIGEST BODY */
+  .digest-body { padding: 12px 14px 0; }
+
+  /* ── SECTION LABEL */
+  .ds-label {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ds-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  /* ── RESULTS ROW (last night) */
+  .results-row {
+    display: flex; flex-direction: column; gap: 5px;
+    margin-bottom: 12px;
+  }
+  .result-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .result-item:hover { background: var(--surface3); }
+  .result-item.your-team {
+    border: 1px solid rgba(68,138,255,0.25);
+    background: rgba(68,138,255,0.06);
+  }
+  .result-team { flex: 1; font-weight: 600; font-size: 12px; }
+  .result-team.away { text-align: right; }
+  .result-score {
+    font-size: 13px; font-weight: 900;
+    min-width: 36px; text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .result-score.win { color: var(--green); }
+  .result-score.loss { color: var(--red); }
+  .result-score.draw { color: var(--text2); }
+  .your-badge {
+    position: absolute;
+    top: -5px; right: 8px;
+    font-size: 9px; font-weight: 700;
+    background: var(--blue);
+    color: white; padding: 1px 6px;
+    border-radius: 10px; letter-spacing: 0.04em;
+  }
+  .result-competition {
+    font-size: 10px; color: var(--text3);
+    min-width: 28px; text-align: center;
+  }
+
+  /* ── TODAY'S GAMES */
+  .today-games { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .today-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .today-item:hover { background: var(--surface3); }
+  .today-item.featured {
+    border: 1px solid rgba(255,215,64,0.2);
+    background: rgba(255,215,64,0.04);
+  }
+  .today-time {
+    font-size: 12px; font-weight: 800;
+    color: var(--text); min-width: 38px;
+  }
+  .today-time.soon { color: var(--green); }
+  .today-teams { flex: 1; font-size: 12px; font-weight: 600; }
+  .today-teams span { color: var(--text2); font-weight: 400; }
+  .today-comp { font-size: 10px; color: var(--text3); }
+  .notify-btn {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .notify-btn:hover { background: rgba(255,215,64,0.15); border-color: rgba(255,215,64,0.4); }
+  .notify-btn.on { background: rgba(255,215,64,0.15); border-color: rgba(255,215,64,0.4); }
+
+  /* ── TOP STORY */
+  .top-story {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .top-story:hover { background: var(--surface3); }
+  .story-emoji { font-size: 22px; flex-shrink: 0; }
+  .story-text { flex: 1; }
+  .story-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 3px;
+  }
+  .story-headline { font-size: 13px; font-weight: 700; line-height: 1.35; }
+  .story-source { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .story-arrow { color: var(--text3); font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+
+  /* ── FOOTER ACTIONS */
+  .digest-footer {
+    padding: 10px 14px 14px;
+    display: flex;
+    gap: 6px;
+  }
+  .digest-btn {
+    flex: 1; padding: 9px 6px;
+    border-radius: 10px;
+    font-size: 12px; font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid;
+    user-select: none;
+  }
+  .btn-primary {
+    background: rgba(255,215,64,0.12);
+    border-color: rgba(255,215,64,0.3);
+    color: var(--amber);
+  }
+  .btn-primary:hover { background: rgba(255,215,64,0.2); }
+  .btn-secondary {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--text2);
+  }
+  .btn-secondary:hover { background: var(--surface3); }
+
+  /* EXPAND TOGGLE */
+  .digest-expand {
+    padding: 0 14px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .digest-expand:hover { color: var(--text2); }
+  .chevron { transition: transform 0.3s; display: inline-block; }
+  .chevron.open { transform: rotate(180deg); }
+
+  /* COLLAPSED SECTION */
+  .digest-extra {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+    padding: 0 14px;
+  }
+  .digest-extra.open { max-height: 300px; }
+
+  /* ── STAT PILLS ROW */
+  .stat-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: center;
+  }
+  .stat-pill .sv { font-size: 15px; font-weight: 800; }
+  .stat-pill .sl { font-size: 10px; color: var(--text3); }
+
+  /* ── BELOW CARD: GHOST CARDS (feed continues) */
+  .ghost-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .ghost-icon { font-size: 20px; }
+  .ghost-text {}
+  .ghost-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .ghost-sub { font-size: 11px; color: var(--text3); }
+
+  /* ══════════════════════════════════════════ ANATOMY PANEL */
+  .anatomy-panel { display: flex; flex-direction: column; gap: 18px; padding-top: 4px; }
+  .anatomy-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    position: relative;
+  }
+  .anatomy-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 16px; bottom: 16px;
+    width: 3px; border-radius: 0 3px 3px 0;
+  }
+  .aa-amber::before { background: var(--amber); }
+  .aa-blue::before { background: var(--blue); }
+  .aa-green::before { background: var(--green); }
+  .aa-purple::before { background: var(--purple); }
+  .aa-red::before { background: var(--red); }
+  .anatomy-num {
+    font-size: 22px; font-weight: 900;
+    color: rgba(255,255,255,0.07);
+    line-height: 1; min-width: 28px;
+  }
+  .anatomy-item h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .anatomy-item p { font-size: 13px; color: var(--text2); line-height: 1.55; }
+  .anatomy-rules {
+    margin-top: 10px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .anatomy-rule {
+    font-size: 12px; color: var(--text2);
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .anatomy-rule::before { content: '→'; color: var(--amber); flex-shrink: 0; }
+
+  /* ══════════════════════════════════════════ TIME VARIANTS */
+  .variants-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .variant-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    transition: border-color 0.2s;
+  }
+  .variant-card:hover { border-color: var(--border2); }
+  .variant-time {
+    font-size: 20px; font-weight: 900;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .variant-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 12px;
+  }
+  .variant-content { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .variant-content b { color: var(--text); font-weight: 600; }
+
+  /* ══════════════════════════════════════════ PERSONALIZATION */
+  .pers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .pers-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .pers-icon { font-size: 24px; margin-bottom: 10px; }
+  .pers-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
+  .pers-card p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+  /* ══════════════════════════════════════════ CONTENT RULES */
+  .rules-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .rules-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+  .rules-row:last-child { border-bottom: none; }
+  .rules-cell {
+    padding: 13px 16px;
+    font-size: 13px;
+    border-right: 1px solid var(--border);
+  }
+  .rules-cell:last-child { border-right: none; }
+  .rules-row.header .rules-cell {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3);
+    background: rgba(255,255,255,0.02);
+    padding: 11px 16px;
+  }
+  .rules-cell .slot-label { font-weight: 600; color: var(--text); }
+  .rules-cell .slot-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* FOOTER */
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    padding: 24px;
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 80px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 30px;
+    padding: 11px 20px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 1000; pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="page-header">
+  <div class="container">
+    <div class="eyebrow">☀️ Morning Digest</div>
+    <h1>The first card<br>fans see every day</h1>
+    <p>A curated, time-aware feed card that greets fans each morning — recapping what they missed and setting up what's coming. Always the top card. Always personalized.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ═══════════════════════════ INTERACTIVE DEMO -->
+  <div class="section">
+    <div class="section-eyebrow">Interactive Prototype</div>
+    <h2>The Morning Digest card</h2>
+    <p class="sub">Try every element — tap results, set notifications, expand the card.</p>
+
+    <div class="demo-layout">
+
+      <!-- LEFT: PHONE -->
+      <div class="phone-wrap">
+        <div class="phone-chrome">
+          <div class="phone-inner">
+            <div class="status-bar">
+              <span class="status-time">8:14</span>
+              <span>Mon, 23 Mar</span>
+              <span>●●●</span>
+            </div>
+            <div class="feed-top-bar">
+              <div class="feed-logo">Sofa<span>Score</span></div>
+            </div>
+            <div class="feed-tab-bar">
+              <div class="feed-tab active">Feed</div>
+              <div class="feed-tab">My teams</div>
+              <div class="feed-tab">Live</div>
+              <div class="feed-tab">Standings</div>
+            </div>
+
+            <div class="feed-scroll">
+
+              <!-- ══ MORNING DIGEST CARD ══ -->
+              <div class="digest-card">
+
+                <div class="digest-banner">
+                  <div class="digest-banner-left">
+                    <span class="sun-icon">☀️</span>
+                    <div>
+                      <div class="digest-title-text">Morning Digest</div>
+                      <div class="digest-date">Monday, 23 March · 8:14 AM</div>
+                    </div>
+                  </div>
+                  <div class="digest-personalized">For you</div>
+                </div>
+
+                <div class="digest-body">
+
+                  <!-- Last night -->
+                  <div class="ds-label">Last night</div>
+                  <div class="results-row">
+
+                    <div class="result-item your-team" onclick="toast('📊 Full match stats loading…')">
+                      <div class="your-badge">YOUR TEAM</div>
+                      <div class="result-team">Man United</div>
+                      <div class="result-score win">2–1</div>
+                      <div class="result-team away">Arsenal</div>
+                      <div class="result-competition">PL</div>
+                    </div>
+
+                    <div class="result-item" onclick="toast('📊 Loading Real Madrid 3–0 Atlético…')">
+                      <div class="result-team">Real Madrid</div>
+                      <div class="result-score win">3–0</div>
+                      <div class="result-team away">Atlético</div>
+                      <div class="result-competition">LL</div>
+                    </div>
+
+                    <div class="result-item" onclick="toast('📊 Loading Bayern 1–1 Dortmund…')">
+                      <div class="result-team">Bayern</div>
+                      <div class="result-score draw">1–1</div>
+                      <div class="result-team away">Dortmund</div>
+                      <div class="result-competition">BL</div>
+                    </div>
+
+                  </div>
+
+                  <!-- Today -->
+                  <div class="ds-label">Today</div>
+                  <div class="today-games">
+
+                    <div class="today-item featured">
+                      <div class="today-time soon">17:30</div>
+                      <div class="today-teams">Liverpool <span>vs</span> Chelsea <span style="font-size:10px;color:rgba(255,215,64,0.6)"> · Premier League</span></div>
+                      <div class="notify-btn" id="nb1" onclick="toggleNotify('nb1')" title="Get notified">🔔</div>
+                    </div>
+
+                    <div class="today-item">
+                      <div class="today-time">20:00</div>
+                      <div class="today-teams">PSG <span>vs</span> Lyon <span style="font-size:10px;color:var(--text3)"> · Ligue 1</span></div>
+                      <div class="notify-btn" id="nb2" onclick="toggleNotify('nb2')" title="Get notified">🔔</div>
+                    </div>
+
+                    <div class="today-item">
+                      <div class="today-time">20:45</div>
+                      <div class="today-teams">Juventus <span>vs</span> Inter <span style="font-size:10px;color:var(--text3)"> · Serie A</span></div>
+                      <div class="notify-btn" id="nb3" onclick="toggleNotify('nb3')" title="Get notified">🔔</div>
+                    </div>
+
+                  </div>
+
+                  <!-- Top story -->
+                  <div class="ds-label">Trending now</div>
+                  <div class="top-story" onclick="toast('Opening full story…')">
+                    <div class="story-emoji">🔴</div>
+                    <div class="story-text">
+                      <div class="story-tag" style="color:var(--red)">Injury</div>
+                      <div class="story-headline">Salah ruled out of today's derby with a hamstring issue</div>
+                      <div class="story-source">Sky Sports · 23 min ago</div>
+                    </div>
+                    <div class="story-arrow">›</div>
+                  </div>
+
+                </div><!-- /digest-body -->
+
+                <!-- Expandable extras -->
+                <div class="digest-expand" onclick="toggleExpand()">
+                  <span id="expandLabel">Show more</span>
+                  <span class="chevron" id="chevron">▾</span>
+                </div>
+                <div class="digest-extra" id="digestExtra">
+                  <div class="ds-label" style="margin-bottom:8px">Yesterday's numbers</div>
+                  <div class="stat-pills">
+                    <div class="stat-pill">
+                      <div class="sv" style="color:var(--green)">14</div>
+                      <div class="sl">Matches played</div>
+                    </div>
+                    <div class="stat-pill">
+                      <div class="sv" style="color:var(--amber)">37</div>
+                      <div class="sl">Goals scored</div>
+                    </div>
+                    <div class="stat-pill">
+                      <div class="sv" style="color:var(--red)">4</div>
+                      <div class="sl">Red cards</div>
+                    </div>
+                    <div class="stat-pill">
+                      <div class="sv" style="color:var(--purple)">6</div>
+                      <div class="sl">Penalties</div>
+                    </div>
+                  </div>
+                  <div class="ds-label" style="margin-bottom:8px">Transfer pulse</div>
+                  <div class="top-story" style="margin-bottom:14px" onclick="toast('Opening transfer story…')">
+                    <div class="story-emoji">💸</div>
+                    <div class="story-text">
+                      <div class="story-tag" style="color:var(--blue)">Transfer</div>
+                      <div class="story-headline">Mbappé linked with surprise Premier League move in summer</div>
+                      <div class="story-source">L'Équipe · 1 hr ago</div>
+                    </div>
+                    <div class="story-arrow">›</div>
+                  </div>
+                </div>
+
+                <div class="digest-footer">
+                  <div class="digest-btn btn-primary" onclick="toast('Opening full feed…')">Open full feed →</div>
+                  <div class="digest-btn btn-secondary" onclick="toast('Customising digest…')">⚙ Customise</div>
+                </div>
+
+              </div><!-- /digest-card -->
+
+              <!-- ghost cards below -->
+              <div class="ghost-card">
+                <div class="ghost-icon">⚽</div>
+                <div class="ghost-text">
+                  <div class="ghost-title">Match Preview: Liverpool vs Chelsea</div>
+                  <div class="ghost-sub">Premier League · Today 17:30</div>
+                </div>
+              </div>
+              <div class="ghost-card">
+                <div class="ghost-icon">📊</div>
+                <div class="ghost-text">
+                  <div class="ghost-title">Man United 2–1 Arsenal — Full Report</div>
+                  <div class="ghost-sub">Player ratings, xG, key moments</div>
+                </div>
+              </div>
+
+            </div><!-- /feed-scroll -->
+          </div><!-- /phone-inner -->
+        </div><!-- /phone-chrome -->
+        <div style="text-align:center; margin-top:14px; font-size:12px; color:var(--text3);">Click any element to interact</div>
+      </div><!-- /phone-wrap -->
+
+      <!-- RIGHT: ANATOMY -->
+      <div class="anatomy-panel">
+
+        <div class="anatomy-item aa-amber">
+          <div class="anatomy-num">1</div>
+          <div>
+            <h3>☀️ Banner — Identity & Trust</h3>
+            <p>The "Morning Digest" header is a consistent, daily ritual anchor. The date and "For you" badge signal this card is personal, not generic. Fans should recognise it instantly every morning.</p>
+            <div class="anatomy-rules">
+              <div class="anatomy-rule">Always pinned as the very first card in the feed</div>
+              <div class="anatomy-rule">Disappears and reshapes as "Evening Recap" after 18:00</div>
+              <div class="anatomy-rule">Amber colour language = informational, not urgent</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="anatomy-item aa-blue">
+          <div class="anatomy-num">2</div>
+          <div>
+            <h3>🌙 Last Night — What you missed</h3>
+            <p>Tappable result rows ordered by relevance: followed teams first, then biggest games. Each result links straight to the full match report. Your team's result always appears first and is visually distinguished.</p>
+            <div class="anatomy-rules">
+              <div class="anatomy-rule">Max 3 results shown inline — more behind expand</div>
+              <div class="anatomy-rule">Win/draw/loss colour coded on the score</div>
+              <div class="anatomy-rule">If no games last night, section replaced with "Yesterday's top story"</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="anatomy-item aa-green">
+          <div class="anatomy-num">3</div>
+          <div>
+            <h3>📅 Today — What's coming</h3>
+            <p>Today's fixtures with kickoff times and a one-tap notification bell. The most important match (biggest rivalry, your followed team, or top league billing) is highlighted. The bell icon turns on/off instantly — no confirmation screen.</p>
+            <div class="anatomy-rules">
+              <div class="anatomy-rule">Kickoff time shown in user's local timezone always</div>
+              <div class="anatomy-rule">"Soon" green colour fires when game is &lt;2 hrs away</div>
+              <div class="anatomy-rule">Max 3 fixtures shown — tapping "Today" tab shows full list</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="anatomy-item aa-red">
+          <div class="anatomy-num">4</div>
+          <div>
+            <h3>🔥 Trending Now — The one story to know</h3>
+            <p>A single curated story — injury, transfer rumour, controversy, record broken. One story only: enough to intrigue, not enough to overwhelm. Tapping opens the full article or relevant feed section. Editorially curated but AI-assisted for relevance.</p>
+            <div class="anatomy-rules">
+              <div class="anatomy-rule">Prioritises stories that affect today's games first</div>
+              <div class="anatomy-rule">Injury news affecting today's fixture = always top</div>
+              <div class="anatomy-rule">Source + timestamp shown for trust and freshness</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="anatomy-item aa-purple">
+          <div class="anatomy-num">5</div>
+          <div>
+            <h3>▾ Expand — For the curious</h3>
+            <p>The collapsed section holds yesterday's aggregate numbers (goals, cards, penalties) and a second trending story. Hidden by default to keep the card compact — die-hards expand it, casuals don't need to.</p>
+            <div class="anatomy-rules">
+              <div class="anatomy-rule">Remembers expand state: if you always open it, it opens by default</div>
+              <div class="anatomy-rule">Transfer pulse slot: only shows if a real story broke overnight</div>
+              <div class="anatomy-rule">Aggregate stats make fans feel informed in 2 seconds</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /anatomy-panel -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ TIME VARIANTS -->
+  <div class="section">
+    <div class="section-eyebrow">Time-Aware Variants</div>
+    <h2>The card changes throughout the day</h2>
+    <p class="sub">The Morning Digest isn't just a morning feature — it reshapes to stay useful at every hour.</p>
+    <div class="variants-grid">
+
+      <div class="variant-card">
+        <div class="variant-time">6–10</div>
+        <div class="variant-label">☀️ Morning</div>
+        <div class="variant-content">
+          <b>Last night's results</b> lead.<br>
+          Today's full fixture list.<br>
+          Top overnight story.<br><br>
+          <b>Tone:</b> Recap + anticipation.
+        </div>
+      </div>
+
+      <div class="variant-card" style="border-color:rgba(68,138,255,0.2);">
+        <div class="variant-time">10–16</div>
+        <div class="variant-label">🌤 Midday</div>
+        <div class="variant-content">
+          Results drop to secondary.<br>
+          <b>Today's previews</b> move up.<br>
+          Team news + lineups when available.<br><br>
+          <b>Tone:</b> Build-up mode.
+        </div>
+      </div>
+
+      <div class="variant-card" style="border-color:rgba(0,230,118,0.2);">
+        <div class="variant-time">16–23</div>
+        <div class="variant-label">🌆 Evening</div>
+        <div class="variant-content">
+          Card becomes <b>Evening Recap</b>.<br>
+          Today's results fill the top.<br>
+          Live score ticker if games active.<br><br>
+          <b>Tone:</b> Real-time + summary.
+        </div>
+      </div>
+
+      <div class="variant-card" style="border-color:rgba(255,82,82,0.15);">
+        <div class="variant-time">No games</div>
+        <div class="variant-label">📆 Off day</div>
+        <div class="variant-content">
+          Card shows <b>next fixture countdown</b>.<br>
+          Transfer news takes lead slot.<br>
+          Press conference clips fill space.<br><br>
+          <b>Tone:</b> Tease &amp; sustain.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ PERSONALIZATION -->
+  <div class="section">
+    <div class="section-eyebrow">Personalization Logic</div>
+    <h2>How the card knows what you care about</h2>
+    <p class="sub">Three layers of signals build the right digest for every fan.</p>
+    <div class="pers-grid">
+
+      <div class="pers-card">
+        <div class="pers-icon">⭐</div>
+        <h3>Explicit follows</h3>
+        <p>Teams and leagues the fan has explicitly followed always appear first — their result, their fixture, their injury news. This is the foundation layer. If you follow Man United, their result leads every morning, win or lose.</p>
+      </div>
+
+      <div class="pers-card">
+        <div class="pers-icon">👁</div>
+        <h3>Implicit behaviour</h3>
+        <p>Which match pages they open, which player ratings they check, which stories they read. If a fan opens every Liverpool match report even without following them, Liverpool content surfaces in their digest automatically.</p>
+      </div>
+
+      <div class="pers-card">
+        <div class="pers-icon">🗓</div>
+        <h3>Fan depth signal</h3>
+        <p>Casual fans (few opens, reaction-only) get a compact 3-section card with big clear results. Die-hards (daily use, expand often, prediction players) get the expanded card open by default with deeper stats and more stories.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ CONTENT SLOT LOGIC -->
+  <div class="section">
+    <div class="section-eyebrow">Content Slot Logic</div>
+    <h2>What fills each slot and when</h2>
+    <p class="sub">Every slot has a primary source and a fallback — the card is never empty.</p>
+
+    <div class="rules-table">
+      <div class="rules-row header">
+        <div class="rules-cell">Slot</div>
+        <div class="rules-cell">Primary content</div>
+        <div class="rules-cell">Fallback (if empty)</div>
+      </div>
+      <div class="rules-row">
+        <div class="rules-cell">
+          <div class="slot-label">Last Night</div>
+          <div class="slot-sub">Top of card</div>
+        </div>
+        <div class="rules-cell">Results from followed team's games + top 2 biggest matches from tracked leagues</div>
+        <div class="rules-cell">Results from the 2 biggest games globally the previous day</div>
+      </div>
+      <div class="rules-row">
+        <div class="rules-cell">
+          <div class="slot-label">Today</div>
+          <div class="slot-sub">Middle section</div>
+        </div>
+        <div class="rules-cell">Followed team's fixture first, then other matches from tracked leagues by kickoff time</div>
+        <div class="rules-cell">Top 3 biggest fixtures globally by expected viewership</div>
+      </div>
+      <div class="rules-row">
+        <div class="rules-cell">
+          <div class="slot-label">Trending Now</div>
+          <div class="slot-sub">Single story</div>
+        </div>
+        <div class="rules-cell">Injury/suspension affecting today's game → overnight transfer news → record broken last night</div>
+        <div class="rules-cell">Most-read story in the last 6 hours globally on platform</div>
+      </div>
+      <div class="rules-row">
+        <div class="rules-cell">
+          <div class="slot-label">Expand: Stats</div>
+          <div class="slot-sub">Behind expand</div>
+        </div>
+        <div class="rules-cell">Aggregate stats from all games played last night (goals, cards, penalties, clean sheets)</div>
+        <div class="rules-cell">Weekly running totals if no games last night</div>
+      </div>
+      <div class="rules-row">
+        <div class="rules-cell">
+          <div class="slot-label">Expand: Transfer</div>
+          <div class="slot-sub">Behind expand</div>
+        </div>
+        <div class="rules-cell">Transfer story involving followed team or top 5 leagues published in last 12 hours</div>
+        <div class="rules-cell">Hidden — slot collapses if no qualifying story exists</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:20px"></div>
+</div>
+
+<div class="footer">
+  Morning Digest Card · Feed Design · SofaScore · March 2026
+</div>
+
+<script>
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  const notifyState = {};
+  function toggleNotify(id) {
+    const btn = document.getElementById(id);
+    notifyState[id] = !notifyState[id];
+    if (notifyState[id]) {
+      btn.classList.add('on');
+      btn.textContent = '🔕';
+      toast('🔔 You\'ll be notified at kickoff!');
+    } else {
+      btn.classList.remove('on');
+      btn.textContent = '🔔';
+      toast('Notification removed');
+    }
+  }
+
+  let expanded = false;
+  function toggleExpand() {
+    expanded = !expanded;
+    document.getElementById('digestExtra').classList.toggle('open', expanded);
+    document.getElementById('chevron').classList.toggle('open', expanded);
+    document.getElementById('expandLabel').textContent = expanded ? 'Show less' : 'Show more';
+  }
+</script>
+</body>
+</html>

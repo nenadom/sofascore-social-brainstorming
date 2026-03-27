@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sofascore – User Profile with Predictions</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: #E8E9EE; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    button { font-family: inherit; }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    const C = {
+      bg: "#E8E9EE",
+      card: "#F5F5F8",
+      cardInner: "#EDEDF0",
+      white: "#FFFFFF",
+      primary: "#3F4FE0",
+      primaryLight: "#E8EBFF",
+      dark: "#161B33",
+      headerDark: "#1B1F3B",
+      headerMid: "#252A4A",
+      text: "#1A1A2E",
+      sub: "#8C8C9C",
+      border: "#E0E0E6",
+      green: "#1DB954",
+      greenSoft: "#34C759",
+      greenLight: "#E8F9EF",
+      red: "#E5383B",
+      redLight: "#FDECEC",
+      orange: "#F5A623",
+      orangeLight: "#FFF4E0",
+      gold: "#FFD700",
+      purple: "#7C3AED",
+      purpleLight: "#EDE9FE",
+      sofaGreen: "#00D167",
+    };
+
+    // ── icons as SVG ──
+    const Ico = ({ d, size = 20, color = C.sub, style, fill = "none" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}><path d={d} /></svg>
+    );
+    const P = {
+      gear: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z",
+      share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
+      chevR: "M9 18l6-6-6-6",
+      trophy: "M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2M4 22h16M10 22V12M14 22V12M8 2h8v7a4 4 0 0 1-8 0V2z",
+      target: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
+      gift: "M20 12v10H4V12M2 7h20v5H2V7zM12 22V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z",
+      sparkle: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83",
+      help: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01",
+      headphones: "M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z",
+      barChart: "M12 20V10M18 20V4M6 20v-4",
+      check: "M20 6L9 17l-5-5",
+    };
+
+    const Badge = ({ text, bg, color, style }) => (
+      <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, background: bg, color, fontSize: 11, fontWeight: 700, ...style }}>{text}</span>
+    );
+
+    const Avatar = ({ name, size = 36, bg = C.primaryLight, color = C.primary, style }) => (
+      <div style={{ width: size, height: size, borderRadius: size / 2, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: size * 0.36, color, flexShrink: 0, ...style }}>
+        {name?.split(" ").map(w => w[0]).join("").slice(0, 2)}
+      </div>
+    );
+
+    // ── menu row component (matches Sofascore style) ──
+    const MenuRow = ({ icon, iconColor, label, onClick, badge, rightContent }) => (
+      <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}>
+        <div style={{ width: 28, height: 28, borderRadius: 14, background: `${iconColor || C.primary}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {typeof icon === "string" && icon.length <= 2 ? (
+            <span style={{ fontSize: 15 }}>{icon}</span>
+          ) : (
+            <Ico d={icon} size={16} color={iconColor || C.primary} />
+          )}
+        </div>
+        <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: C.text }}>{label}</span>
+        {badge && <Badge text={badge} bg={C.primaryLight} color={C.primary} />}
+        {rightContent}
+        <Ico d={P.chevR} size={18} color={C.primary} />
+      </button>
+    );
+
+    const Divider = () => <div style={{ height: 1, background: C.border, margin: "0 16px" }} />;
+
+    // ── section card (matches the rounded card groups in the screenshot) ──
+    const SectionCard = ({ children, style }) => (
+      <div style={{ background: C.card, borderRadius: 16, margin: "0 16px 8px", overflow: "hidden", ...style }}>
+        {children}
+      </div>
+    );
+
+    // ════════════════════════════════════════════════
+    // MAIN APP
+    // ════════════════════════════════════════════════
+    function App() {
+      const [expandedSection, setExpandedSection] = useState(null);
+
+      const predStats = {
+        correct: 112, incorrect: 44, total: 156, hitRate: 72, streak: 5, bestStreak: 11,
+        rank: 847, totalPredictors: 52340,
+        rewardTarget: 20, rewardCurrent: 14,
+      };
+
+      const leaderboard = [
+        { rank: 1, name: "Marko P", hitRate: 89, predictions: 203, streak: 14, country: "🇭🇷", isUser: false, change: 0 },
+        { rank: 2, name: "Stefan K", hitRate: 86, predictions: 178, streak: 8, country: "🇷🇸", isUser: false, change: 1 },
+        { rank: 3, name: "Ana V", hitRate: 84, predictions: 312, streak: 6, country: "🇭🇷", isUser: false, change: -1 },
+        { rank: null, separator: true },
+        { rank: 846, name: "Dario M", hitRate: 73, predictions: 94, streak: 3, country: "🇭🇷", isUser: false, change: 2 },
+        { rank: 847, name: "Robert S", hitRate: 72, predictions: 156, streak: 5, country: "🇭🇷", isUser: true, change: 12 },
+        { rank: 848, name: "Ivana S", hitRate: 72, predictions: 141, streak: 2, country: "🇭🇷", isUser: false, change: -3 },
+      ];
+
+      const rewardPct = (predStats.rewardCurrent / predStats.rewardTarget) * 100;
+
+      const toggle = (key) => setExpandedSection(prev => prev === key ? null : key);
+
+      return (
+        <div style={{ maxWidth: 390, margin: "0 auto", background: C.bg, minHeight: "100vh", position: "relative" }}>
+
+          {/* ── dark header ── */}
+          <div style={{ background: `linear-gradient(180deg, ${C.headerDark} 0%, ${C.headerMid} 100%)`, paddingBottom: 20 }}>
+            {/* status bar */}
+            <div style={{ padding: "8px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "#fff", fontSize: 15, fontWeight: 600 }}>9:41</span>
+              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                <span style={{ color: "#fff", fontSize: 11 }}>▂▄▆█</span>
+                <span style={{ color: "#fff", fontSize: 12 }}>📶</span>
+                <span style={{ color: "#fff", fontSize: 14 }}>🔋</span>
+              </div>
+            </div>
+
+            {/* Profile title + gear */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 20px 0" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 28, color: "#fff" }}>Profile</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginTop: 2 }}>Joined 14.01.2024.</div>
+              </div>
+              <button style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+                <Ico d={P.gear} size={24} color="rgba(255,255,255,.7)" />
+              </button>
+            </div>
+
+            {/* avatar */}
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <div style={{ width: 100, height: 100, borderRadius: 50, background: "linear-gradient(135deg, #374DF5, #7C3AED)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", border: "3px solid rgba(255,255,255,.15)" }}>
+                <span style={{ fontSize: 36, fontWeight: 800, color: "#fff" }}>RS</span>
+              </div>
+            </div>
+
+            {/* name + share */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px 0" }}>
+              <div style={{ fontWeight: 800, fontSize: 22, color: "#fff" }}>Robert Smith</div>
+              <button style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <Ico d={P.share} size={22} color="rgba(255,255,255,.7)" />
+              </button>
+            </div>
+          </div>
+
+          {/* ── scrollable content ── */}
+          <div style={{ overflowY: "auto", paddingBottom: 40, paddingTop: 8 }}>
+
+            {/* ── Upgrade banner ── */}
+            <div style={{ margin: "0 16px 8px", background: C.sofaGreen, borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", cursor: "pointer" }}>
+              <span style={{ fontSize: 20, marginRight: 10 }}>💎</span>
+              <span style={{ flex: 1, fontWeight: 700, fontSize: 15, color: "#fff" }}>Upgrade Sofascore</span>
+              <Ico d={P.chevR} size={20} color="#fff" />
+            </div>
+
+            {/* ── Referral promo ── */}
+            <SectionCard>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px" }}>
+                <div style={{ width: 70, height: 54, borderRadius: 8, background: "linear-gradient(135deg, #2D2D5E, #1A1A2E)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 28 }}>🤝</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>Every friend counts</div>
+                  <div style={{ fontSize: 13, color: C.sub }}>Get AI Match Analysis for a month</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, color: C.primary, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                    View more <Ico d={P.chevR} size={14} color={C.primary} />
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ── Main menu section ── */}
+            <SectionCard>
+              <MenuRow icon="🏆" iconColor={C.orange} label="Weekly Challenge" />
+              <Divider />
+              <MenuRow icon={P.target} iconColor={C.primary} label="My predictions" badge={`${predStats.total}`} onClick={() => toggle("predictions")} />
+
+              {/* ━━━ EXPANDED: My Predictions ━━━ */}
+              {expandedSection === "predictions" && (
+                <div style={{ padding: "0 16px 16px" }}>
+
+                  {/* correct vs incorrect */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <div style={{ flex: 1, background: C.greenLight, borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: C.green }}>{predStats.correct}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.green, marginTop: 2 }}>✅ Correct</div>
+                    </div>
+                    <div style={{ flex: 1, background: C.redLight, borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: C.red }}>{predStats.incorrect}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.red, marginTop: 2 }}>❌ Incorrect</div>
+                    </div>
+                  </div>
+
+                  {/* hit rate bar */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>Hit Rate</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: C.green }}>{predStats.hitRate}%</span>
+                    </div>
+                    <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ width: `${predStats.hitRate}%`, background: C.green, borderRadius: "4px 0 0 4px" }} />
+                      <div style={{ flex: 1, background: C.redLight }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: C.green, fontWeight: 600 }}>{predStats.correct} correct</span>
+                      <span style={{ fontSize: 10, color: C.red, fontWeight: 600 }}>{predStats.incorrect} incorrect</span>
+                    </div>
+                  </div>
+
+                  {/* stats row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                    {[
+                      { label: "Total", val: predStats.total, color: C.primary },
+                      { label: "Streak", val: `🔥 ${predStats.streak}`, color: C.orange },
+                      { label: "Best streak", val: predStats.bestStreak, color: C.gold },
+                    ].map((s, i) => (
+                      <div key={i} style={{ background: C.cardInner, borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: s.color }}>{s.val}</div>
+                        <div style={{ fontSize: 10, color: C.sub, marginTop: 2 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* share stats button */}
+                  <button style={{ width: "100%", padding: "10px", marginTop: 10, borderRadius: 10, border: "none", background: C.primary, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <Ico d={P.share} size={14} color="#fff" /> Share My Stats
+                  </button>
+                </div>
+              )}
+
+              <Divider />
+              <MenuRow icon={P.barChart} iconColor={C.primary} label="Leaderboards" badge={`#${predStats.rank}`} onClick={() => toggle("leaderboard")} />
+
+              {/* ━━━ EXPANDED: Leaderboard ━━━ */}
+              {expandedSection === "leaderboard" && (
+                <div style={{ padding: "0 16px 16px" }}>
+                  <div style={{ fontSize: 12, color: C.sub, marginBottom: 10 }}>
+                    You're ranked <strong style={{ color: C.primary }}>#{predStats.rank}</strong> out of {predStats.totalPredictors.toLocaleString()} predictors
+                  </div>
+
+                  {leaderboard.map((entry, i) => {
+                    if (entry.separator) {
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                          <div style={{ flex: 1, borderTop: `1px dashed ${C.border}` }} />
+                          <span style={{ fontSize: 10, color: C.sub }}>•••</span>
+                          <div style={{ flex: 1, borderTop: `1px dashed ${C.border}` }} />
+                        </div>
+                      );
+                    }
+                    const isTop3 = entry.rank <= 3;
+                    return (
+                      <div key={i} style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", marginBottom: 3, borderRadius: 10,
+                        background: entry.isUser ? C.primaryLight : C.cardInner,
+                        border: entry.isUser ? `2px solid ${C.primary}` : "none",
+                      }}>
+                        <div style={{ width: 26, textAlign: "center" }}>
+                          {isTop3 ? (
+                            <span style={{ fontSize: 16 }}>{entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : "🥉"}</span>
+                          ) : (
+                            <span style={{ fontSize: 12, fontWeight: 800, color: entry.isUser ? C.primary : C.sub }}>#{entry.rank}</span>
+                          )}
+                        </div>
+                        <Avatar name={entry.name} size={28}
+                          bg={entry.isUser ? "linear-gradient(135deg, #374DF5, #7C3AED)" : C.border}
+                          color={entry.isUser ? "#fff" : C.text}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <span style={{ fontWeight: entry.isUser ? 800 : 600, fontSize: 13, color: entry.isUser ? C.primary : C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {entry.country} {entry.name}
+                            </span>
+                            {entry.isUser && <Badge text="YOU" bg={C.primary} color="#fff" />}
+                          </div>
+                          <div style={{ fontSize: 10, color: C.sub }}>{entry.predictions} pred · 🔥 {entry.streak}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 800, fontSize: 13, color: C.green }}>{entry.hitRate}%</div>
+                          <div style={{ fontSize: 9, color: entry.change > 0 ? C.green : entry.change < 0 ? C.red : C.sub, fontWeight: 600 }}>
+                            {entry.change > 0 ? `▲ ${entry.change}` : entry.change < 0 ? `▼ ${Math.abs(entry.change)}` : "—"}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button style={{ width: "100%", padding: "10px", marginTop: 6, borderRadius: 10, background: C.cardInner, border: "none", color: C.primary, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    View full leaderboard →
+                  </button>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* ━━━ AI Analyst Reward Progress ━━━ */}
+            <SectionCard style={{ border: `1.5px solid ${C.purple}25` }}>
+              <div style={{ padding: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #7C3AED, #A78BFA)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 14 }}>🤖</span>
+                  </div>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>Unlock AI Analyst</span>
+                  <Badge text="REWARD" bg={C.purpleLight} color={C.purple} style={{ marginLeft: "auto" }} />
+                </div>
+                <div style={{ fontSize: 12, color: C.sub, marginBottom: 14, lineHeight: 1.4 }}>
+                  Publish {predStats.rewardTarget} correct predictions to earn <strong style={{ color: C.purple }}>1 free month of AI Analyst</strong>.
+                </div>
+
+                {/* progress */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: C.purple }}>{predStats.rewardCurrent}<span style={{ fontSize: 14, fontWeight: 600, color: C.sub }}>/{predStats.rewardTarget}</span></span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.sub }}>correct predictions</span>
+                </div>
+                <div style={{ position: "relative", height: 12, background: C.cardInner, borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{
+                    width: `${rewardPct}%`, height: "100%",
+                    background: `linear-gradient(90deg, ${C.purple}, #A78BFA)`,
+                    borderRadius: 6,
+                    boxShadow: "0 0 8px rgba(124,58,237,.25)",
+                  }} />
+                </div>
+                {/* milestone markers */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, padding: "0 2px" }}>
+                  {[0, 5, 10, 15, 20].map(m => (
+                    <div key={m} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: m <= predStats.rewardCurrent ? C.purple : C.sub }}>
+                        {m === 20 ? "🎁" : m}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* estimate */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: `${C.purple}08`, borderRadius: 8, marginTop: 10 }}>
+                  <Ico d={P.sparkle} size={16} color={C.purple} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+                      {predStats.rewardTarget - predStats.rewardCurrent} more to go!
+                    </div>
+                    <div style={{ fontSize: 11, color: C.sub }}>
+                      At your rate, ~{Math.ceil((predStats.rewardTarget - predStats.rewardCurrent) / (predStats.hitRate / 100))} more predictions needed
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ── Support section ── */}
+            <SectionCard>
+              <div style={{ padding: "14px 16px 6px" }}>
+                <span style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Support</span>
+              </div>
+              <MenuRow icon={P.help} iconColor={C.primary} label="FAQ" />
+              <Divider />
+              <MenuRow icon={P.headphones} iconColor={C.primary} label="Give feedback" />
+            </SectionCard>
+
+            {/* ── Inventory section ── */}
+            <SectionCard>
+              <div style={{ padding: "14px 16px 6px" }}>
+                <span style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Inventory</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px 14px" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 16, background: C.cardInner, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 16 }}>✨</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.red }}>Flares left: 0</div>
+                  <div style={{ fontSize: 12, color: C.sub }}>Watch an ad, get a flare</div>
+                </div>
+                <button style={{ padding: "8px 16px", borderRadius: 20, background: C.primary, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                  ▶ Get ✨
+                </button>
+              </div>
+            </SectionCard>
+
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>

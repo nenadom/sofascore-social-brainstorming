@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)file:///Users/ninadelic/Downloads/sofascore-feed-redcard.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sofascore Feed – Live Question Card</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 32px;
+    min-height: 100vh;
+    padding: 40px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .screen-label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #333; }
+  .phone-shell {
+    width: 340px; height: 820px; background: #000;
+    border-radius: 40px; border: 2px solid #2a2a2a;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), inset 0 0 0 1px #111;
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column; isolation: isolate;
+  }
+  .status-bar { background: #000; padding: 10px 20px 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .status-bar .time { font-size: 13px; font-weight: 600; color: #fff; }
+  .status-icons { display: flex; align-items: center; gap: 5px; }
+  .status-icons svg { fill: #fff; }
+  .top-bar { background: #000; padding: 0 12px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .bolt-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .search-bar { flex: 1; background: #1a1a1a; border-radius: 20px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; }
+  .search-bar span { font-size: 12px; color: #555; }
+  .avatar-icon { width: 28px; height: 28px; border-radius: 50%; background: #1a1a1a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .feed-tabs { background: #000; padding: 0 12px 10px; display: flex; gap: 8px; flex-shrink: 0; }
+  .feed-tab { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #777; border: 1px solid #2a2a2a; }
+  .feed-tab.active { background: #fff; color: #000; border-color: #fff; }
+  .feed-area { flex: 1; background: #000; overflow-y: auto; padding: 0 10px 12px; scrollbar-width: none; }
+  .feed-area::-webkit-scrollbar { display: none; }
+  .match-strip { background: #111; border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border: 1px solid #1e1e1e; }
+  .match-strip .teams { font-size: 12px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+  .match-strip .teams .sep { color: #444; font-weight: 400; }
+  .match-strip .right { display: flex; align-items: center; gap: 8px; }
+  .match-strip .score { font-size: 13px; font-weight: 800; color: #fff; }
+  .live-dot { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #e74c3c; }
+  .live-dot .dot { width: 6px; height: 6px; background: #e74c3c; border-radius: 50%; animation: blink 1.1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+  .q-card { background: #111; border-radius: 16px; overflow: hidden; border: 1px solid #1e1e1e; }
+  .event-row { padding: 10px 14px 0; display: flex; align-items: center; gap: 8px; }
+  .event-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; background: #2a0a0a; color: #f87171; border: 1px solid #f8717166; }
+  .event-min { font-size: 11px; color: #444; font-weight: 600; }
+  .q-body { padding: 10px 14px 14px; }
+  .q-title { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.35; margin-bottom: 3px; }
+  .q-sub { font-size: 11px; color: #555; line-height: 1.45; margin-bottom: 14px; }
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .opt { background: #000; border: 1.5px solid #1e1e1e; border-radius: 12px; padding: 11px 14px; font-size: 12px; font-weight: 600; color: #bbb; display: flex; align-items: center; gap: 10px; }
+  .opt-key { width: 20px; height: 20px; background: #1e1e1e; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #555; flex-shrink: 0; }
+  .meta { margin-top: 12px; padding-top: 10px; border-top: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
+  .meta .voters { font-size: 10px; color: #444; }
+  .meta .share { font-size: 10px; color: #3D6FFF; font-weight: 600; }
+  .bottom-nav { background: #000; border-top: 1px solid #1a1a1a; padding: 8px 0 14px; display: flex; justify-content: space-around; flex-shrink: 0; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .nav-item .nav-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+  .nav-item .nav-label { font-size: 10px; color: #555; font-weight: 500; }
+  .nav-item.active .nav-icon { background: #fff; }
+  .nav-item.active .nav-label { color: #fff; }
+  .android-nav { background: #000; padding: 8px 0 10px; display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; }
+  .android-nav .nav-btn { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- STATE 1 -->
+<div class="screen-wrap">
+<div class="screen-label">State 1 — Before voting</div>
+<div class="phone-shell">
+  <div class="status-bar">
+    <span class="time">12:30</span>
+    <div class="status-icons">
+      <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0-3c1.6 0 3 .65 4.05 1.7l-1.42 1.42A3.97 3.97 0 0 0 7.5 7.5a3.97 3.97 0 0 0-2.63.97L3.45 7.05A5.97 5.97 0 0 1 7.5 5.5zm0-3c2.6 0 4.95 1.05 6.65 2.75l-1.42 1.42A7.94 7.94 0 0 0 7.5 4.5a7.94 7.94 0 0 0-5.23 2.17L.85 5.25A9.94 9.94 0 0 1 7.5 2.5z"></path></svg>
+      <svg width="13" height="11" viewBox="0 0 13 11"><rect x="0" y="7" width="2.5" height="4" rx="0.5"></rect><rect x="3.5" y="5" width="2.5" height="6" rx="0.5"></rect><rect x="7" y="2.5" width="2.5" height="8.5" rx="0.5"></rect><rect x="10.5" y="0" width="2.5" height="11" rx="0.5"></rect></svg>
+      <svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="1" width="19" height="9" rx="2" stroke="#fff" stroke-width="1" fill="none"></rect><rect x="19.5" y="3.5" width="2" height="4" rx="1" fill="#fff"></rect><rect x="1.5" y="2.5" width="14" height="6" rx="1" fill="#fff"></rect></svg>
+    </div>
+  </div>
+  <div class="top-bar">
+    <div class="bolt-icon"><svg width="16" height="22" viewBox="0 0 16 22" fill="white"><path d="M9 0L0 13h7l-2 9 9-13H7L9 0z"></path></svg></div>
+    <div class="search-bar">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="#555"><path d="M12.9 14.32a8 8 0 1 1 1.41-1.41l5.35 5.33-1.42 1.42-5.33-5.34zM8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"></path></svg>
+      <span>Search Sofascore</span>
+    </div>
+    <div class="avatar-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="#555"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"></path></svg></div>
+  </div>
+  <div class="feed-tabs">
+    <div class="feed-tab">Following</div>
+    <div class="feed-tab active">Live</div>
+    <div class="feed-tab">Recap</div>
+  </div>
+  <div class="feed-area">
+    <div class="match-strip">
+      <div class="teams">Barcelona <span class="sep">vs</span> Atletico<span style="font-size:10px;color:#555;font-weight:400;margin-left:2px;">· La Liga</span></div>
+      <div class="right"><div class="score">0 – 0</div><div class="live-dot"><div class="dot"></div>38'</div></div>
+    </div>
+    <div class="q-card">
+      <div class="event-row"><div class="event-pill">🟥 Red card</div><span class="event-min">37'</span></div>
+      <div class="q-body">
+        <div class="q-title">De Jong received a straight red card.</div>
+        <div class="q-sub">Studs-up tackle from behind, no contact with the ball. Fair call?</div>
+        <div class="options">
+          <div class="opt"><div class="opt-key">A</div>Deserved — clear red 🟥</div>
+          <div class="opt"><div class="opt-key">B</div>Too harsh — yellow enough 🟨</div>
+          <div class="opt"><div class="opt-key">C</div>No foul at all 🤷</div>
+        </div>
+        <div class="meta">
+          <span class="voters">8,871 votes</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#444;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Comment</span>
+            <span class="share">Share ↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;border-radius:16px;border:1px dashed #2a2a2a;background:#0a0a0a;height:240px;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:11px;color:#333;font-weight:500;">Sofascore post</span>
+    </div>
+    <div style="margin-top:8px;background:#111;border-radius:16px;border:1px solid #1e1e1e;padding:14px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;"><span style="font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:0.5px;">📖 RIVALRY FLASHBACK</span></div>
+      <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:6px;">Last time Barça played 10 vs 11 against Atleti, they won 2–1.</div>
+      <div style="font-size:11px;color:#555;line-height:1.5;">May 2014 · La Liga · Camp Nou. Xavi's 88' winner sealed 3rd for Barça — Atlético had already clinched the title the same night in Madrid.</div>
+    </div>
+    <div style="margin-top:8px;background:#111;border-radius:16px;border:1px solid #1e1e1e;padding:14px;">
+      <div style="font-size:10px;color:#555;margin-bottom:6px;font-weight:600;">🔥 HOT TAKE</div>
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">"Mbappé should start every El Clásico."</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:#0a1a0a;border:1px solid #22c55e44;border-radius:10px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:#22c55e;">Agree 64%</div>
+        <div style="flex:1;background:#1a0a0a;border:1px solid #ef444444;border-radius:10px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:#ef4444;">Disagree 36%</div>
+      </div>
+    </div>
+    <!-- Opinion Poll card — STATE 1 pre-vote -->
+    <div style="margin-top:8px;background:#111;border-radius:16px;border:1px solid #1e1e1e;overflow:hidden;">
+      <div style="padding:12px 14px 14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <span style="font-size:10px;color:#f59e0b;font-weight:700;letter-spacing:0.5px;">📊 OPINION POLL</span>
+        </div>
+        <div style="font-size:14px;font-weight:800;color:#fff;line-height:1.35;margin-bottom:3px;">Should Haaland make the move to Real Madrid this summer?</div>
+        <div style="font-size:11px;color:#555;margin-bottom:14px;">Florentino is reportedly ready to table a €200M offer.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#000;border:1.5px solid #1e1e1e;border-radius:12px;padding:11px 14px;font-size:12px;font-weight:600;color:#bbb;">Yes — he belongs at Madrid ⚪</div>
+          <div style="background:#000;border:1.5px solid #1e1e1e;border-radius:12px;padding:11px 14px;font-size:12px;font-weight:600;color:#bbb;">No — stay in the PL 🏴󠁧󠁢󠁥󠁮󠁧󠁿</div>
+          <div style="background:#000;border:1.5px solid #1e1e1e;border-radius:12px;padding:11px 14px;font-size:12px;font-weight:600;color:#bbb;">Only for €200M+ 💸</div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:#444;">24,310 votes</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#444;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Comment</span>
+            <span style="font-size:10px;color:#3D6FFF;font-weight:600;">Share ↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px;"></div>
+  </div>
+  <div style="position:absolute;bottom:110px;left:0;right:0;height:40px;background:linear-gradient(transparent,#000);pointer-events:none;z-index:1;"></div>
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="#555"><circle cx="12" cy="12" r="10" stroke="#555" stroke-width="1.5" fill="none"></circle><path d="M2 12h20M12 2c-2.5 3-4 6-4 10s1.5 7 4 10M12 2c2.5 3 4 6 4 10s-1.5 7-4 10" stroke="#555" stroke-width="1.5" fill="none"></path></svg></div><span class="nav-label">Football</span></div>
+    <div class="nav-item"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon></svg></div><span class="nav-label">Favourites</span></div>
+    <div class="nav-item active"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="#000"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="8" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect><rect x="13" y="13" width="8" height="8" rx="1.5"></rect></svg></div><span class="nav-label">Feed</span></div>
+    <div class="nav-item"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8"><path d="M6 2h12l-1 7H7L6 2zM7 9l-3 8h16l-3-8"></path><circle cx="12" cy="19" r="2"></circle></svg></div><span class="nav-label">Fantasy</span></div>
+  </div>
+  <div class="android-nav">
+    <div class="nav-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#444"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg></div>
+    <div class="nav-btn"><div style="width:14px;height:14px;border-radius:50%;border:2px solid #444;"></div></div>
+    <div class="nav-btn"><div style="width:12px;height:12px;border-radius:2px;border:2px solid #444;"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- STATE 2 -->
+<div class="screen-wrap">
+<div class="screen-label">State 2 — After voting</div>
+<div class="phone-shell">
+  <div class="status-bar">
+    <span class="time">12:30</span>
+    <div class="status-icons">
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="white"><path d="M7.5 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0-3c1.6 0 3 .65 4.05 1.7l-1.42 1.42A3.97 3.97 0 0 0 7.5 7.5a3.97 3.97 0 0 0-2.63.97L3.45 7.05A5.97 5.97 0 0 1 7.5 5.5zm0-3c2.6 0 4.95 1.05 6.65 2.75l-1.42 1.42A7.94 7.94 0 0 0 7.5 4.5a7.94 7.94 0 0 0-5.23 2.17L.85 5.25A9.94 9.94 0 0 1 7.5 2.5z"></path></svg>
+      <svg width="13" height="11" viewBox="0 0 13 11" fill="white"><rect x="0" y="7" width="2.5" height="4" rx="0.5"></rect><rect x="3.5" y="5" width="2.5" height="6" rx="0.5"></rect><rect x="7" y="2.5" width="2.5" height="8.5" rx="0.5"></rect><rect x="10.5" y="0" width="2.5" height="11" rx="0.5"></rect></svg>
+      <svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="1" width="19" height="9" rx="2" stroke="#fff" stroke-width="1" fill="none"></rect><rect x="19.5" y="3.5" width="2" height="4" rx="1" fill="#fff"></rect><rect x="1.5" y="2.5" width="14" height="6" rx="1" fill="#fff"></rect></svg>
+    </div>
+  </div>
+  <div class="top-bar">
+    <div class="bolt-icon"><svg width="16" height="22" viewBox="0 0 16 22" fill="white"><path d="M9 0L0 13h7l-2 9 9-13H7L9 0z"></path></svg></div>
+    <div class="search-bar">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="#555"><path d="M12.9 14.32a8 8 0 1 1 1.41-1.41l5.35 5.33-1.42 1.42-5.33-5.34zM8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"></path></svg>
+      <span>Search Sofascore</span>
+    </div>
+    <div class="avatar-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="#555"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"></path></svg></div>
+  </div>
+  <div class="feed-tabs">
+    <div class="feed-tab">Following</div>
+    <div class="feed-tab active">Live</div>
+    <div class="feed-tab">Recap</div>
+  </div>
+  <div class="feed-area">
+    <div class="match-strip">
+      <div class="teams">Barcelona <span class="sep">vs</span> Atletico<span style="font-size:10px;color:#555;font-weight:400;margin-left:2px;">· La Liga</span></div>
+      <div class="right"><div class="score">0 – 0</div><div class="live-dot"><div class="dot"></div>38'</div></div>
+    </div>
+    <div class="q-card">
+      <div class="event-row"><div class="event-pill">🟥 Red card</div><span class="event-min">37'</span></div>
+      <div class="q-body">
+        <div class="q-title">De Jong received a straight red card.</div>
+        <div style="display:inline-flex;align-items:center;gap:4px;background:#0a1a2a;border:1px solid #3D6FFF33;border-radius:6px;padding:3px 9px;margin-bottom:10px;">
+          <span style="font-size:9px;font-weight:700;color:#3D6FFF;">✓ Your pick: Too harsh</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="position:relative;border-radius:12px;padding:10px 14px;border:1.5px solid #ffffff18;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:51%;background:#ffffff0d;border-radius:12px;"></div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:10px;"><div style="width:20px;height:20px;background:#1e1e1e;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#555;">A</div><span style="font-size:12px;font-weight:600;color:#888;">Deserved — clear red 🟥</span></div>
+              <span style="font-size:13px;font-weight:800;color:#888;">51%</span>
+            </div>
+          </div>
+          <div style="position:relative;border-radius:12px;padding:10px 14px;border:1.5px solid #3D6FFF55;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:39%;background:#3D6FFF18;border-radius:12px;"></div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:10px;"><div style="width:20px;height:20px;background:#3D6FFF22;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#3D6FFF;">B</div><span style="font-size:12px;font-weight:600;color:#fff;">Too harsh — yellow enough 🟨</span></div>
+              <span style="font-size:13px;font-weight:800;color:#3D6FFF;">39%</span>
+            </div>
+          </div>
+          <div style="position:relative;border-radius:12px;padding:10px 14px;border:1.5px solid #1e1e1e;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:10%;background:#ffffff08;border-radius:12px;"></div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:10px;"><div style="width:20px;height:20px;background:#1a1a1a;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#333;">C</div><span style="font-size:12px;font-weight:600;color:#555;">No foul at all 🤷</span></div>
+              <span style="font-size:13px;font-weight:800;color:#555;">10%</span>
+            </div>
+          </div>
+        </div>
+        <div class="meta" style="margin-top:12px;">
+          <span class="voters">8,871 votes · still live</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#444;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Comment</span>
+            <span class="share">Share ↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;border-radius:16px;border:1px dashed #2a2a2a;background:#0a0a0a;height:240px;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:11px;color:#333;font-weight:500;">Sofascore post</span>
+    </div>
+    <div style="margin-top:8px;background:#111;border-radius:16px;border:1px solid #1e1e1e;padding:14px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;"><span style="font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:0.5px;">📖 RIVALRY FLASHBACK</span></div>
+      <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:6px;">Last time Barça played 10 vs 11 against Atleti, they won 2–1.</div>
+      <div style="font-size:11px;color:#555;line-height:1.5;">May 2014 · La Liga · Camp Nou. Xavi's 88' winner sealed 3rd for Barça — Atlético had already clinched the title the same night in Madrid.</div>
+    </div>
+    <div style="margin-top:8px;background:#111;border-radius:16px;border:1px solid #1e1e1e;padding:14px;">
+      <div style="font-size:10px;color:#555;margin-bottom:6px;font-weight:600;">🔥 HOT TAKE</div>
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">"Mbappé should start every El Clásico."</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:#0a1a0a;border:1px solid #22c55e44;border-radius:10px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:#22c55e;">Agree 64%</div>
+        <div style="flex:1;background:#1a0a0a;border:1px solid #ef444444;border-radius:10px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:#ef4444;">Disagree 36%</div>
+      </div>
+    </div>
+    <!-- Opinion Poll card — STATE 2 after-vote -->
+    <div style="margin-top:8px;background:#111;border-radius:16px;border:1px solid #1e1e1e;overflow:hidden;">
+      <div style="padding:12px 14px 14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <span style="font-size:10px;color:#f59e0b;font-weight:700;letter-spacing:0.5px;">📊 OPINION POLL</span>
+        </div>
+        <div style="font-size:14px;font-weight:800;color:#fff;line-height:1.35;margin-bottom:3px;">Should Haaland make the move to Real Madrid this summer?</div>
+        <!-- Your pick badge -->
+        <div style="display:inline-flex;align-items:center;gap:4px;background:#1a1200;border:1px solid #f59e0b33;border-radius:6px;padding:3px 9px;margin-bottom:10px;">
+          <span style="font-size:9px;font-weight:700;color:#f59e0b;">✓ Your pick: Yes — he belongs at Madrid</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <!-- Option 1 — user's pick, leading -->
+          <div style="position:relative;border-radius:12px;padding:10px 14px;border:1.5px solid #f59e0b55;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:58%;background:#f59e0b18;border-radius:12px;"></div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:12px;font-weight:600;color:#fff;">Yes — he belongs at Madrid ⚪</span>
+              <span style="font-size:13px;font-weight:800;color:#f59e0b;">58%</span>
+            </div>
+          </div>
+          <!-- Option 2 -->
+          <div style="position:relative;border-radius:12px;padding:10px 14px;border:1.5px solid #1e1e1e;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:28%;background:#ffffff08;border-radius:12px;"></div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:12px;font-weight:600;color:#666;">No — stay in the PL 🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>
+              <span style="font-size:13px;font-weight:800;color:#666;">28%</span>
+            </div>
+          </div>
+          <!-- Option 3 -->
+          <div style="position:relative;border-radius:12px;padding:10px 14px;border:1.5px solid #1e1e1e;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:14%;background:#ffffff05;border-radius:12px;"></div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:12px;font-weight:600;color:#444;">Only for €200M+ 💸</span>
+              <span style="font-size:13px;font-weight:800;color:#444;">14%</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:#444;">24,310 votes</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#444;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Comment</span>
+            <span style="font-size:10px;color:#3D6FFF;font-weight:600;">Share ↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px;"></div>
+  </div>
+  <div style="position:absolute;bottom:110px;left:0;right:0;height:40px;background:linear-gradient(transparent,#000);pointer-events:none;z-index:1;"></div>
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="#555"><circle cx="12" cy="12" r="10" stroke="#555" stroke-width="1.5" fill="none"></circle><path d="M2 12h20M12 2c-2.5 3-4 6-4 10s1.5 7 4 10M12 2c2.5 3 4 6 4 10s-1.5 7-4 10" stroke="#555" stroke-width="1.5" fill="none"></path></svg></div><span class="nav-label">Football</span></div>
+    <div class="nav-item"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon></svg></div><span class="nav-label">Favourites</span></div>
+    <div class="nav-item active"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="#000"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="8" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect><rect x="13" y="13" width="8" height="8" rx="1.5"></rect></svg></div><span class="nav-label">Feed</span></div>
+    <div class="nav-item"><div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8"><path d="M6 2h12l-1 7H7L6 2zM7 9l-3 8h16l-3-8"></path><circle cx="12" cy="19" r="2"></circle></svg></div><span class="nav-label">Fantasy</span></div>
+  </div>
+  <div class="android-nav">
+    <div class="nav-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#444"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg></div>
+    <div class="nav-btn"><div style="width:14px;height:14px;border-radius:50%;border:2px solid #444;"></div></div>
+    <div class="nav-btn"><div style="width:12px;height:12px;border-radius:2px;border:2px solid #444;"></div></div>
+  </div>
+</div>
+</div>
+
+
+</body></html>

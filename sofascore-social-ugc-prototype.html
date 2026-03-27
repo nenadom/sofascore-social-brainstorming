@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sofascore Social UGC Prototype</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #F0F1F5;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React 18 from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel standalone for JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    // ============================================================
+    // SOFASCORE SOCIAL / UGC PROOF-OF-CONCEPT PROTOTYPE
+    // Two concepts: Player Hub + User Predictions (merged w/ Fan Call)
+    // Views: Feed (integrated) and Detail (isolated card exploration)
+    // ============================================================
+
+    // — palette & constants ———————————————————————————————
+    const C = {
+      bg: "#F0F1F5",
+      card: "#FFFFFF",
+      primary: "#374DF5",
+      primaryLight: "#E8EBFF",
+      dark: "#1A1A2E",
+      text: "#333346",
+      sub: "#8C8C9C",
+      border: "#E8E8ED",
+      green: "#1DB954",
+      greenLight: "#E8F9EF",
+      red: "#E5383B",
+      redLight: "#FDECEC",
+      orange: "#F5A623",
+      orangeLight: "#FFF4E0",
+      gold: "#FFD700",
+      surface: "#F7F7FA",
+    };
+
+    const RADIUS = 12;
+
+    // — tiny SVG icons ——————————————————————————————————
+    const Icon = ({ d, size = 18, color = C.sub, style }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+        <path d={d} />
+      </svg>
+    );
+    const Icons = {
+      heart: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z",
+      share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
+      chat: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+      search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",
+      star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+      up: "M12 19V5M5 12l7-7 7 7",
+      down: "M12 5v14M19 12l-7 7-7-7",
+      check: "M20 6L9 17l-5-5",
+      clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",
+      fire: "M12 2c0 4-4 6-4 10a4 4 0 1 0 8 0c0-4-4-6-4-10z",
+      trophy: "M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2M4 22h16M10 22V12M14 22V12M8 2h8v7a4 4 0 0 1-8 0V2z",
+      user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+      plus: "M12 5v14M5 12h14",
+      chevronRight: "M9 18l6-6-6-6",
+      globe: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z",
+      target: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
+      barChart: "M12 20V10M18 20V4M6 20v-4",
+    };
+
+    // — avatar / logo placeholders ——————————————————————
+    const Avatar = ({ name, size = 36, bg = C.primaryLight, color = C.primary, style }) => (
+      <div style={{ width: size, height: size, borderRadius: size / 2, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: size * 0.38, color, flexShrink: 0, ...style }}>
+        {name?.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+      </div>
+    );
+
+    const TeamBadge = ({ name, size = 28, colors }) => {
+      const c = colors || ["#374DF5", "#E8EBFF"];
+      return (
+        <div style={{ width: size, height: size, borderRadius: size / 2, background: `linear-gradient(135deg, ${c[0]}, ${c[1]})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: size * 0.36, color: "#fff", flexShrink: 0 }}>
+          {name?.slice(0, 2).toUpperCase()}
+        </div>
+      );
+    };
+
+    // — shared components ————————————————————————————————
+    const Chip = ({ label, active, onClick, icon, count, color }) => (
+      <button onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 20, border: active ? "none" : `1px solid ${C.border}`, background: active ? (color || C.dark) : "#fff", color: active ? "#fff" : C.text, fontSize: 13, fontWeight: active ? 600 : 500, cursor: "pointer", whiteSpace: "nowrap", transition: "all .15s" }}>
+        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
+        {label}
+        {count != null && <span style={{ background: active ? "rgba(255,255,255,.25)" : C.surface, borderRadius: 10, padding: "1px 7px", fontSize: 11, fontWeight: 700, marginLeft: 2 }}>{count}</span>}
+      </button>
+    );
+
+    const Card = ({ children, style, onClick }) => (
+      <div onClick={onClick} style={{ background: C.card, borderRadius: RADIUS, overflow: "hidden", cursor: onClick ? "pointer" : "default", ...style }}>
+        {children}
+      </div>
+    );
+
+    const SectionTitle = ({ icon, title, action, actionLabel }) => (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {icon && <span style={{ fontSize: 18 }}>{icon}</span>}
+          <span style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>{title}</span>
+        </div>
+        {actionLabel && <button onClick={action} style={{ background: "none", border: "none", color: C.primary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{actionLabel}</button>}
+      </div>
+    );
+
+    const ActionBar = ({ likes = 0, shares = 0, comments = 0, onLike, liked }) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 16px" }}>
+        <button onClick={onLike} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", color: liked ? C.primary : C.sub, fontSize: 13, fontWeight: 500 }}>
+          <Icon d={Icons.heart} size={16} color={liked ? C.primary : C.sub} /> {likes.toLocaleString()}
+        </button>
+        {comments > 0 && (
+          <span style={{ display: "flex", alignItems: "center", gap: 5, color: C.sub, fontSize: 13 }}>
+            <Icon d={Icons.chat} size={16} /> {comments}
+          </span>
+        )}
+        <span style={{ display: "flex", alignItems: "center", gap: 5, color: C.sub, fontSize: 13, marginLeft: "auto" }}>
+          <Icon d={Icons.share} size={16} /> {shares}
+        </span>
+      </div>
+    );
+
+    const ProgressBar = ({ pct, color = C.primary, height = 6 }) => (
+      <div style={{ background: C.border, borderRadius: height / 2, height, overflow: "hidden", flex: 1 }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: height / 2, transition: "width .5s ease" }} />
+      </div>
+    );
+
+    const Badge = ({ text, bg, color }) => (
+      <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 10, background: bg, color, fontSize: 11, fontWeight: 700 }}>{text}</span>
+    );
+
+    // ============================================================
+    // EXISTING FEED CARD TYPES (simplified mocks)
+    // ============================================================
+    const BuzzerRail = () => {
+      const matches = [
+        { home: "LIV", away: "ARS", score: "2 - 1", time: "67'", live: true, homeC: ["#C8102E", "#F4D4D4"], awayC: ["#EF0107", "#FADADA"] },
+        { home: "BAR", away: "RMA", score: "0 - 0", time: "HT", live: true, homeC: ["#A50044", "#EDCDD8"], awayC: ["#FEBE10", "#FFF3D0"] },
+        { home: "MCI", away: "CHE", score: "3 - 2", time: "FT", live: false, homeC: ["#6CABDD", "#D4ECFC"], awayC: ["#034694", "#CDD8ED"] },
+      ];
+      return (
+        <div style={{ display: "flex", gap: 8, padding: "8px 16px", overflowX: "auto" }}>
+          {matches.map((m, i) => (
+            <div key={i} style={{ minWidth: 100, background: m.live ? "linear-gradient(135deg, #1A1A2E 0%, #2D2D5E 100%)" : C.card, borderRadius: 12, padding: "10px 12px", border: m.live ? "none" : `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <TeamBadge name={m.home} size={22} colors={m.homeC} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: m.live ? "#FF6B6B" : C.sub }}>{m.time}</span>
+                <TeamBadge name={m.away} size={22} colors={m.awayC} />
+              </div>
+              <div style={{ textAlign: "center", fontWeight: 800, fontSize: 14, color: m.live ? "#fff" : C.dark }}>{m.score}</div>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    const MatchRecapCard = ({ home, away, score, league, round, date }) => (
+      <Card style={{ margin: "0 8px" }}>
+        <SectionTitle icon="⚽" title="Match recap" />
+        <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ textAlign: "center" }}>
+            <TeamBadge name={home} size={40} colors={["#C8102E", "#F4D4D4"]} />
+            <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, color: C.dark }}>{home}</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: C.sub }}>{league}</div>
+            <div style={{ fontSize: 10, color: C.sub, marginBottom: 4 }}>{round}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: C.dark }}>{score}</div>
+            <div style={{ fontSize: 10, color: C.sub, marginTop: 4 }}>Finished</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <TeamBadge name={away} size={40} colors={["#6CABDD", "#D4ECFC"]} />
+            <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, color: C.dark }}>{away}</div>
+          </div>
+        </div>
+        <div style={{ textAlign: "center", padding: "4px 16px 8px" }}>
+          <Badge text={date} bg={C.primaryLight} color={C.primary} />
+        </div>
+        <ActionBar likes={1249} shares={8} />
+      </Card>
+    );
+
+    const SpotlightCard = () => (
+      <Card style={{ margin: "0 8px" }}>
+        <SectionTitle icon="📊" title="Sofascore Spotlight" actionLabel="↗" />
+        <div style={{ background: "linear-gradient(135deg, #1A1A2E 0%, #2D2D5E 100%)", margin: "0 12px 12px", borderRadius: 10, padding: "16px" }}>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 16, marginBottom: 4 }}>Most in a single match</div>
+          <div style={{ color: "rgba(255,255,255,.6)", fontSize: 11, marginBottom: 12 }}>TOP 5 EUROPEAN LEAGUES / GW 28</div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
+            {[{ name: "T. Morente", stat: "Duels won", val: 24, badge: "SEASON RECORD" }, { name: "T.P. Cardoso", stat: "High claims", val: 9, badge: "DATABASE RECORD" }, { name: "L. Yamal", stat: "Succ. dribbles", val: 10, badge: null }].map((p, i) => (
+              <div key={i} style={{ flex: 1, textAlign: "center" }}>
+                <Avatar name={p.name} size={32} bg="rgba(255,255,255,.15)" color="#fff" />
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,.7)", marginTop: 4 }}>{p.name}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{p.stat}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginTop: 4 }}>{p.val}</div>
+                {p.badge && <Badge text={p.badge} bg="rgba(255,199,0,.2)" color={C.gold} />}
+              </div>
+            ))}
+          </div>
+        </div>
+        <ActionBar likes={3420} shares={24} />
+      </Card>
+    );
+
+    const NewsCard = ({ title, source, img }) => (
+      <Card style={{ margin: "0 8px" }}>
+        <div style={{ height: 140, background: `linear-gradient(135deg, #2D2D5E 0%, #1A1A2E 100%)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 40 }}>{img || "📰"}</span>
+        </div>
+        <div style={{ padding: "12px 16px" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, lineHeight: 1.3 }}>{title}</div>
+          <div style={{ fontSize: 12, color: C.sub, marginTop: 4 }}>{source}</div>
+        </div>
+        <ActionBar likes={856} shares={12} />
+      </Card>
+    );
+
+    // ============================================================
+    // CONCEPT 1: PLAYER HUB CARD
+    // ============================================================
+    const PlayerHubCard = ({ expanded = false, onToggle }) => {
+      const [activeTab, setActiveTab] = useState("stats");
+      const [following, setFollowing] = useState(false);
+
+      const player = { name: "Lamine Yamal", team: "FC Barcelona", pos: "RW", age: 17, rating: 8.2, country: "Spain" };
+      const stats = [
+        { label: "Goals", val: 12, trend: "+3" },
+        { label: "Assists", val: 9, trend: "+1" },
+        { label: "Key passes", val: 87, trend: "+5" },
+        { label: "Rating", val: "8.2", trend: "↑" },
+      ];
+      const highlights = [
+        { title: "Goal vs Real Madrid", time: "73'", type: "⚽", match: "El Clásico" },
+        { title: "Assist vs Arsenal", time: "41'", type: "🅰️", match: "UCL QF" },
+        { title: "Dribble run vs PSG", time: "55'", type: "🔥", match: "UCL SF" },
+      ];
+
+      return (
+        <Card style={{ margin: "0 8px", border: `2px solid ${C.primary}15` }}>
+          {/* Header with NEW badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px 8px" }}>
+            <Badge text="NEW" bg={C.primary} color="#fff" />
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>Player Hub</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: C.sub }}>Curated by</span>
+            <Avatar name="Marko K" size={20} />
+          </div>
+
+          {/* Player header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 16px" }}>
+            <div style={{ position: "relative" }}>
+              <Avatar name={player.name} size={56} bg="linear-gradient(135deg, #A50044, #004D98)" color="#fff" />
+              <div style={{ position: "absolute", bottom: -2, right: -2, background: C.green, borderRadius: 10, padding: "1px 6px", fontSize: 10, fontWeight: 800, color: "#fff" }}>{player.rating}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 17, color: C.dark }}>{player.name}</div>
+              <div style={{ fontSize: 12, color: C.sub }}>{player.team} · {player.pos} · {player.age}y</div>
+              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                <Badge text="🇪🇸 Spain" bg={C.surface} color={C.text} />
+                <Badge text="La Liga" bg={C.surface} color={C.text} />
+              </div>
+            </div>
+            <button onClick={() => setFollowing(!following)} style={{ padding: "6px 14px", borderRadius: 20, border: following ? `1px solid ${C.primary}` : "none", background: following ? "#fff" : C.primary, color: following ? C.primary : "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {following ? "Following" : "Follow"}
+            </button>
+          </div>
+
+          {/* Content tabs */}
+          <div style={{ display: "flex", gap: 0, padding: "8px 16px 0", borderBottom: `1px solid ${C.border}` }}>
+            {["stats", "highlights", "chat"].map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, padding: "8px 0", background: "none", border: "none", borderBottom: activeTab === tab ? `2px solid ${C.primary}` : "2px solid transparent", color: activeTab === tab ? C.primary : C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                {tab === "chat" ? `💬 Chat (47)` : tab === "highlights" ? "🎬 Highlights" : "📊 Stats"}
+              </button>
+            ))}
+          </div>
+
+          {/* Stats tab */}
+          {activeTab === "stats" && (
+            <div style={{ padding: "12px 16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {stats.map((s, i) => (
+                  <div key={i} style={{ background: C.surface, borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 11, color: C.sub }}>{s.label}</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: C.dark }}>{s.val}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: C.green }}>{s.trend}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 10, padding: "8px 12px", background: C.surface, borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon d={Icons.barChart} size={16} color={C.primary} />
+                <span style={{ fontSize: 12, color: C.primary, fontWeight: 600 }}>View full season statistics →</span>
+              </div>
+            </div>
+          )}
+
+          {/* Highlights tab */}
+          {activeTab === "highlights" && (
+            <div style={{ padding: "12px 16px" }}>
+              {highlights.map((h, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < highlights.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div style={{ width: 60, height: 40, borderRadius: 6, background: "linear-gradient(135deg, #1A1A2E, #2D2D5E)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 18 }}>{h.type}</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.dark }}>{h.title}</div>
+                    <div style={{ fontSize: 11, color: C.sub }}>{h.match} · {h.time}</div>
+                  </div>
+                  <Icon d={Icons.chevronRight} size={16} color={C.sub} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Chat tab */}
+          {activeTab === "chat" && (
+            <div style={{ padding: "12px 16px" }}>
+              {[
+                { user: "Ivan P", text: "That dribble run in the 2nd half was unreal 🔥", time: "2m ago", likes: 23 },
+                { user: "Ana M", text: "Best teenager in world football, no debate.", time: "5m ago", likes: 41 },
+                { user: "Tomislav R", text: "His off-the-ball movement has improved so much this season", time: "12m ago", likes: 18 },
+              ].map((msg, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: i < 2 ? `1px solid ${C.border}` : "none" }}>
+                  <Avatar name={msg.user} size={28} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: C.dark }}>{msg.user}</span>
+                      <span style={{ fontSize: 10, color: C.sub }}>{msg.time}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: C.text, marginTop: 2, lineHeight: 1.35 }}>{msg.text}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 3, color: C.sub, fontSize: 11 }}>
+                    <Icon d={Icons.heart} size={13} color={C.sub} /> {msg.likes}
+                  </div>
+                </div>
+              ))}
+              <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
+                <div style={{ flex: 1, background: C.surface, borderRadius: 20, padding: "9px 14px", fontSize: 13, color: C.sub }}>Join the conversation...</div>
+                <button style={{ width: 34, height: 34, borderRadius: 17, background: C.primary, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon d={Icons.chevronRight} size={16} color="#fff" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ borderTop: `1px solid ${C.border}` }}>
+            <ActionBar likes={2847} shares={34} comments={47} />
+          </div>
+        </Card>
+      );
+    };
+
+    // ============================================================
+    // CONCEPT 2: USER PREDICTIONS CARD
+    // ============================================================
+    const PredictionCard = ({ variant = "feed" }) => {
+      const [voted, setVoted] = useState(null);
+      const [upvoted, setUpvoted] = useState(false);
+
+      const prediction = {
+        user: "Luka D",
+        accuracy: 72,
+        streak: 5,
+        title: "Arsenal to beat Liverpool + BTTS",
+        matches: [{ home: "Arsenal", away: "Liverpool", league: "Premier League" }],
+        reasoning: null,
+        stats: [
+          { label: "Arsenal home wins", val: "12/13", icon: "🏠" },
+          { label: "Liverpool away concede rate", val: "1.4/g", icon: "📉" },
+          { label: "BTTS in H2H (last 10)", val: "8/10", icon: "⚽" },
+        ],
+        odds: "2.85",
+        votes: { up: 847, down: 123 },
+        confidence: "High",
+        locked: true,
+        lockedAt: "26 Mar, 15:32",
+        kickoff: "26 Mar, 21:00",
+      };
+
+      return (
+        <Card style={{ margin: "0 8px", border: `2px solid ${C.orange}20` }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px 4px" }}>
+            <Badge text="PREDICTION" bg={C.orangeLight} color={C.orange} />
+            <span style={{ fontSize: 11, color: C.sub }}>Locked {prediction.lockedAt}</span>
+            <span style={{ marginLeft: "auto" }}>
+              <Badge text={`🔒 Pre-match`} bg={C.greenLight} color={C.green} />
+            </span>
+          </div>
+
+          {/* User info */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px" }}>
+            <Avatar name={prediction.user} size={40} bg="linear-gradient(135deg, #F5A623, #FF6B6B)" color="#fff" />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontWeight: 700, fontSize: 14, color: C.dark }}>{prediction.user}</span>
+                <Badge text={`${prediction.accuracy}% hit rate`} bg={C.greenLight} color={C.green} />
+              </div>
+              <div style={{ fontSize: 12, color: C.sub }}>🔥 {prediction.streak} correct in a row</div>
+            </div>
+          </div>
+
+          {/* Prediction title */}
+          <div style={{ padding: "4px 16px 10px" }}>
+            <div style={{ fontWeight: 800, fontSize: 16, color: C.dark, lineHeight: 1.3 }}>{prediction.title}</div>
+          </div>
+
+          {/* Match info */}
+          <div style={{ margin: "0 16px", padding: "10px 12px", background: C.surface, borderRadius: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <TeamBadge name="ARS" size={24} colors={["#EF0107", "#FADADA"]} />
+                <span style={{ fontWeight: 700, fontSize: 13, color: C.dark }}>Arsenal</span>
+              </div>
+              <span style={{ fontSize: 11, color: C.sub }}>vs</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 700, fontSize: 13, color: C.dark }}>Liverpool</span>
+                <TeamBadge name="LIV" size={24} colors={["#C8102E", "#F4D4D4"]} />
+              </div>
+            </div>
+            <div style={{ textAlign: "center", fontSize: 11, color: C.sub, marginTop: 6 }}>
+              <Icon d={Icons.clock} size={12} color={C.sub} style={{ verticalAlign: "middle", marginRight: 4 }} />
+              {prediction.kickoff} · {prediction.matches[0].league}
+            </div>
+          </div>
+
+          {/* Stats backing */}
+          <div style={{ padding: "0 16px 8px" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.sub, marginBottom: 6, textTransform: "uppercase" }}>Supporting stats</div>
+            {prediction.stats.map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: C.surface, borderRadius: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: C.text }}>{s.icon} {s.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: C.dark }}>{s.val}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Odds & confidence */}
+          <div style={{ display: "flex", gap: 8, padding: "4px 16px 12px" }}>
+            <div style={{ flex: 1, background: C.orangeLight, borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: C.orange, fontWeight: 600 }}>ODDS</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: C.orange }}>{prediction.odds}</div>
+            </div>
+            <div style={{ flex: 1, background: C.greenLight, borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: C.green, fontWeight: 600 }}>CONFIDENCE</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: C.green }}>{prediction.confidence}</div>
+            </div>
+          </div>
+
+          {/* Voting */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px 12px" }}>
+            <button onClick={() => setUpvoted(!upvoted)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, border: `1px solid ${upvoted ? C.green : C.border}`, background: upvoted ? C.greenLight : "#fff", cursor: "pointer", color: upvoted ? C.green : C.text, fontWeight: 600, fontSize: 13 }}>
+              <Icon d={Icons.up} size={16} color={upvoted ? C.green : C.sub} /> {upvoted ? prediction.votes.up + 1 : prediction.votes.up}
+            </button>
+            <button style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", color: C.text, fontWeight: 600, fontSize: 13 }}>
+              <Icon d={Icons.down} size={16} color={C.sub} /> {prediction.votes.down}
+            </button>
+          </div>
+
+          <div style={{ borderTop: `1px solid ${C.border}` }}>
+            <ActionBar likes={prediction.votes.up} shares={56} comments={23} />
+          </div>
+        </Card>
+      );
+    };
+
+    // — Prediction creation flow (detail view) —————————
+    const PredictionCreator = () => {
+      const [step, setStep] = useState(0);
+      const [selectedMatch, setSelectedMatch] = useState(null);
+      const [selectedOutcome, setSelectedOutcome] = useState(null);
+      const [selectedStats, setSelectedStats] = useState([]);
+      const [confidence, setConfidence] = useState(null);
+      const [eventFilter, setEventFilter] = useState("upcoming");
+      const [searchQuery, setSearchQuery] = useState("");
+
+      const allMatches = [
+        { id: 1, home: "Arsenal", away: "Liverpool", time: "21:00", date: "Today", league: "Premier League", homeC: ["#EF0107", "#FADADA"], awayC: ["#C8102E", "#F4D4D4"], tags: ["upcoming", "popular"], odds: "2.85", popularity: 9847 },
+        { id: 2, home: "Barcelona", away: "Real Madrid", time: "21:00", date: "Tomorrow", league: "La Liga", homeC: ["#A50044", "#EDCDD8"], awayC: ["#FEBE10", "#FFF3D0"], tags: ["upcoming", "popular", "highOdds"], odds: "3.40", popularity: 12340 },
+        { id: 3, home: "Bayern", away: "Dortmund", time: "18:30", date: "Tomorrow", league: "Bundesliga", homeC: ["#DC052D", "#F8D4DA"], awayC: ["#FDE100", "#FFF9CC"], tags: ["upcoming", "highOdds"], odds: "4.10", popularity: 6821 },
+        { id: 4, home: "PSG", away: "Marseille", time: "45'", date: "Live", league: "Ligue 1", homeC: ["#004170", "#CCE0F0"], awayC: ["#2FAEE0", "#D6F0FA"], tags: ["live", "popular"], odds: "1.95", popularity: 5430, liveScore: "1 - 0" },
+        { id: 5, home: "Inter", away: "AC Milan", time: "62'", date: "Live", league: "Serie A", homeC: ["#010E80", "#CDD0F0"], awayC: ["#FB090B", "#FDD0D0"], tags: ["live"], odds: "2.20", popularity: 8920, liveScore: "2 - 2" },
+        { id: 6, home: "Benfica", away: "Sporting", time: "20:00", date: "Sat", league: "Liga Portugal", homeC: ["#FF0000", "#FFD0D0"], awayC: ["#00543D", "#C8E8DC"], tags: ["upcoming", "highOdds"], odds: "5.50", popularity: 3210 },
+        { id: 7, home: "Ajax", away: "PSV", time: "16:30", date: "Sun", league: "Eredivisie", homeC: ["#D2122E", "#F4D4DA"], awayC: ["#ED1C24", "#FBD4D6"], tags: ["upcoming", "highOdds"], odds: "4.75", popularity: 2870 },
+      ];
+
+      const filterConfig = {
+        upcoming: { label: "⏰ Upcoming", filter: (m) => m.tags.includes("upcoming") },
+        live: { label: "⚡ Live", filter: (m) => m.tags.includes("live") },
+        popular: { label: "🔥 Popular", filter: (m) => m.tags.includes("popular") },
+        highOdds: { label: "💰 High Odds", filter: (m) => m.tags.includes("highOdds") },
+      };
+
+      const filteredMatches = allMatches
+        .filter(filterConfig[eventFilter]?.filter || (() => true))
+        .filter((m) => searchQuery === "" || `${m.home} ${m.away} ${m.league}`.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const outcomes = ["Home Win", "Draw", "Away Win", "BTTS Yes", "Over 2.5", "Under 2.5"];
+
+      const availableStats = [
+        { id: 1, label: "Arsenal home wins this season", val: "12/13", selected: false },
+        { id: 2, label: "Liverpool away goals per game", val: "1.4", selected: false },
+        { id: 3, label: "H2H BTTS rate (last 10)", val: "80%", selected: false },
+        { id: 4, label: "Arsenal xG at home", val: "2.31", selected: false },
+        { id: 5, label: "Liverpool clean sheets away", val: "3/13", selected: false },
+      ];
+
+      const toggleStat = (id) => {
+        setSelectedStats((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : prev.length < 3 ? [...prev, id] : prev);
+      };
+
+      return (
+        <Card style={{ margin: "0 8px" }}>
+          <div style={{ padding: "16px", background: `linear-gradient(135deg, ${C.orange}15, ${C.primary}08)` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Icon d={Icons.target} size={20} color={C.orange} />
+              <span style={{ fontWeight: 800, fontSize: 16, color: C.dark }}>Create Prediction</span>
+            </div>
+            {/* Step indicator */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+              {["Match", "Outcome", "Stats", "Confirm"].map((s, i) => (
+                <div key={i} style={{ flex: 1 }}>
+                  <div style={{ height: 3, borderRadius: 2, background: i <= step ? C.primary : C.border, transition: "all .3s" }} />
+                  <div style={{ fontSize: 10, color: i <= step ? C.primary : C.sub, fontWeight: 600, marginTop: 3, textAlign: "center" }}>{s}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Step 0: Select match */}
+          {step === 0 && (
+            <div style={{ padding: "12px 16px" }}>
+              {/* Search bar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.surface, borderRadius: 10, marginBottom: 10 }}>
+                <Icon d={Icons.search} size={16} color={C.sub} />
+                <input
+                  type="text"
+                  placeholder="Search teams, leagues..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13, color: C.dark }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} style={{ background: "none", border: "none", cursor: "pointer", color: C.sub, fontSize: 16, lineHeight: 1 }}>×</button>
+                )}
+              </div>
+
+              {/* Filter chips */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" }}>
+                {Object.entries(filterConfig).map(([key, cfg]) => (
+                  <Chip
+                    key={key}
+                    label={cfg.label}
+                    active={eventFilter === key}
+                    onClick={() => setEventFilter(key)}
+                    count={allMatches.filter(cfg.filter).length}
+                  />
+                ))}
+              </div>
+
+              {/* Match list */}
+              {filteredMatches.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "24px 0", color: C.sub, fontSize: 13 }}>No matches found</div>
+              ) : (
+                filteredMatches.map((m) => (
+                  <button key={m.id} onClick={() => { setSelectedMatch(m); setStep(1); }} style={{ display: "flex", alignItems: "center", width: "100%", gap: 10, padding: "12px", marginBottom: 6, borderRadius: 8, border: `1px solid ${selectedMatch?.id === m.id ? C.primary : C.border}`, background: selectedMatch?.id === m.id ? C.primaryLight : "#fff", cursor: "pointer", textAlign: "left" }}>
+                    <TeamBadge name={m.home.slice(0, 3)} size={24} colors={m.homeC} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{m.home} vs {m.away}</span>
+                        {m.liveScore && <Badge text={`LIVE ${m.liveScore}`} bg={C.redLight} color={C.red} />}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                        <span style={{ fontSize: 11, color: C.sub }}>{m.date} · {m.time} · {m.league}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                        <Badge text={`@ ${m.odds}`} bg={C.orangeLight} color={C.orange} />
+                        <span style={{ fontSize: 10, color: C.sub }}>🔥 {m.popularity.toLocaleString()} predictions</span>
+                      </div>
+                    </div>
+                    <TeamBadge name={m.away.slice(0, 3)} size={24} colors={m.awayC} />
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Step 1: Select outcome */}
+          {step === 1 && (
+            <div style={{ padding: "12px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: C.surface, borderRadius: 8 }}>
+                <TeamBadge name={selectedMatch?.home.slice(0, 3)} size={22} colors={selectedMatch?.homeC} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.dark }}>{selectedMatch?.home} vs {selectedMatch?.away}</span>
+                <TeamBadge name={selectedMatch?.away.slice(0, 3)} size={22} colors={selectedMatch?.awayC} />
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 10 }}>What's your prediction?</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                {outcomes.map((o) => (
+                  <button key={o} onClick={() => { setSelectedOutcome(o); setStep(2); }} style={{ padding: "12px 8px", borderRadius: 8, border: `1px solid ${selectedOutcome === o ? C.primary : C.border}`, background: selectedOutcome === o ? C.primaryLight : "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, color: selectedOutcome === o ? C.primary : C.text }}>
+                    {o}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Select supporting stats */}
+          {step === 2 && (
+            <div style={{ padding: "12px 16px" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 4 }}>Back it up with stats</div>
+              <div style={{ fontSize: 11, color: C.sub, marginBottom: 10 }}>Select up to 3 stats to support your prediction</div>
+              {availableStats.map((s) => (
+                <button key={s.id} onClick={() => toggleStat(s.id)} style={{ display: "flex", alignItems: "center", width: "100%", gap: 10, padding: "10px 12px", marginBottom: 4, borderRadius: 8, border: `1px solid ${selectedStats.includes(s.id) ? C.primary : C.border}`, background: selectedStats.includes(s.id) ? C.primaryLight : "#fff", cursor: "pointer", textAlign: "left" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${selectedStats.includes(s.id) ? C.primary : C.border}`, background: selectedStats.includes(s.id) ? C.primary : "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {selectedStats.includes(s.id) && <Icon d={Icons.check} size={12} color="#fff" />}
+                  </div>
+                  <div style={{ flex: 1, fontSize: 13, color: C.text }}>{s.label}</div>
+                  <span style={{ fontWeight: 800, fontSize: 13, color: C.dark }}>{s.val}</span>
+                </button>
+              ))}
+              <button onClick={() => setStep(3)} disabled={selectedStats.length === 0} style={{ width: "100%", padding: "12px", marginTop: 10, borderRadius: 10, border: "none", background: selectedStats.length > 0 ? C.primary : C.border, color: selectedStats.length > 0 ? "#fff" : C.sub, fontWeight: 700, fontSize: 14, cursor: selectedStats.length > 0 ? "pointer" : "default" }}>
+                Continue ({selectedStats.length}/3 selected)
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: Confirm & lock */}
+          {step === 3 && (
+            <div style={{ padding: "12px 16px" }}>
+              <div style={{ padding: "12px", background: C.surface, borderRadius: 8, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: C.sub, marginBottom: 6 }}>YOUR PREDICTION</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: C.dark }}>{selectedMatch?.home} vs {selectedMatch?.away}: {selectedOutcome}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 8 }}>How confident are you?</div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+                {["Low", "Medium", "High"].map((c) => (
+                  <button key={c} onClick={() => setConfidence(c)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1px solid ${confidence === c ? (c === "High" ? C.green : c === "Medium" ? C.orange : C.red) : C.border}`, background: confidence === c ? (c === "High" ? C.greenLight : c === "Medium" ? C.orangeLight : C.redLight) : "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, color: confidence === c ? (c === "High" ? C.green : c === "Medium" ? C.orange : C.red) : C.text }}>
+                    {c === "High" ? "🔥" : c === "Medium" ? "🤔" : "🎲"} {c}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: C.orangeLight, borderRadius: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 16 }}>🔒</span>
+                <div style={{ fontSize: 12, color: C.orange, lineHeight: 1.3 }}>
+                  <strong>Prediction will be locked</strong> and timestamped. It cannot be edited or deleted after submission.
+                </div>
+              </div>
+              <button onClick={() => setStep(0)} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "none", background: C.primary, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+                🔒 Lock & Publish Prediction
+              </button>
+            </div>
+          )}
+        </Card>
+      );
+    };
+
+    // — Prediction profile stats card ————————————————————
+    const PredictionProfileCard = () => (
+      <Card style={{ margin: "0 8px" }}>
+        <div style={{ padding: "16px", background: `linear-gradient(135deg, #1A1A2E, #2D2D5E)`, borderRadius: `${RADIUS}px ${RADIUS}px 0 0` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Avatar name="Luka D" size={52} bg="linear-gradient(135deg, #F5A623, #FF6B6B)" color="#fff" />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 17, color: "#fff" }}>Luka D</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)" }}>Prediction Pro · Since Jan 2026</div>
+            </div>
+            <button style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 20, background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.2)", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <Icon d={Icons.share} size={13} color="#fff" style={{ verticalAlign: "middle", marginRight: 4 }} />
+              Share
+            </button>
+          </div>
+        </div>
+
+        {/* Stats grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: C.border }}>
+          {[
+            { label: "Hit rate", val: "72%", sub: "Top 5%", color: C.green },
+            { label: "Predictions", val: "156", sub: "This season", color: C.primary },
+            { label: "Current streak", val: "🔥 5", sub: "Personal best", color: C.orange },
+          ].map((s, i) => (
+            <div key={i} style={{ background: C.card, padding: "14px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: C.sub }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: s.color, marginTop: 2 }}>{s.val}</div>
+              <div style={{ fontSize: 10, color: C.sub, marginTop: 2 }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent predictions */}
+        <div style={{ padding: "12px 16px" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 8, textTransform: "uppercase" }}>Recent predictions</div>
+          {[
+            { match: "Arsenal 2-1 Liverpool", pred: "Home Win + BTTS", result: "✅", odds: "2.85" },
+            { match: "Barça 3-0 Real Madrid", pred: "Home Win + Over 2.5", result: "✅", odds: "3.10" },
+            { match: "Man City 1-1 Chelsea", pred: "Home Win", result: "❌", odds: "1.65" },
+            { match: "Bayern 4-2 Dortmund", pred: "BTTS + Over 2.5", result: "✅", odds: "1.90" },
+          ].map((p, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
+              <span style={{ fontSize: 18 }}>{p.result}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.dark }}>{p.match}</div>
+                <div style={{ fontSize: 11, color: C.sub }}>{p.pred}</div>
+              </div>
+              <Badge text={`@ ${p.odds}`} bg={C.surface} color={C.text} />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: "0 16px 14px" }}>
+          <button style={{ width: "100%", padding: "10px", borderRadius: 8, background: C.surface, border: "none", color: C.primary, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+            View all predictions →
+          </button>
+        </div>
+      </Card>
+    );
+
+    // ============================================================
+    // WHO WILL WIN — compact community poll card
+    // ============================================================
+    const WhoWillWinCard = () => {
+      const [vote, setVote] = useState(null);
+      const total = 12847;
+      const pcts = { home: 58, draw: 18, away: 24 };
+
+      return (
+        <Card style={{ margin: "0 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px 6px" }}>
+            <Badge text="COMMUNITY" bg={C.primaryLight} color={C.primary} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>Who Will Win?</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: C.sub }}>{total.toLocaleString()} votes</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px" }}>
+            <div style={{ textAlign: "center" }}>
+              <TeamBadge name="ARS" size={36} colors={["#EF0107", "#FADADA"]} />
+              <div style={{ fontSize: 11, fontWeight: 600, marginTop: 4, color: C.dark }}>Arsenal</div>
+            </div>
+            <div style={{ fontSize: 11, color: C.sub }}>Today, 21:00</div>
+            <div style={{ textAlign: "center" }}>
+              <TeamBadge name="LIV" size={36} colors={["#C8102E", "#F4D4D4"]} />
+              <div style={{ fontSize: 11, fontWeight: 600, marginTop: 4, color: C.dark }}>Liverpool</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, padding: "6px 16px 14px" }}>
+            {[
+              { key: "home", label: "Arsenal", pct: pcts.home },
+              { key: "draw", label: "Draw", pct: pcts.draw },
+              { key: "away", label: "Liverpool", pct: pcts.away },
+            ].map((o) => (
+              <button key={o.key} onClick={() => setVote(o.key)} style={{ flex: 1, padding: "10px 4px", borderRadius: 8, border: `1.5px solid ${vote === o.key ? C.primary : C.border}`, background: vote === o.key ? C.primaryLight : "#fff", cursor: "pointer", textAlign: "center", transition: "all .15s" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: vote === o.key ? C.primary : C.text }}>{o.label}</div>
+                {vote && (
+                  <div style={{ marginTop: 6 }}>
+                    <ProgressBar pct={o.pct} color={vote === o.key ? C.primary : C.border} height={4} />
+                    <div style={{ fontSize: 12, fontWeight: 800, color: vote === o.key ? C.primary : C.sub, marginTop: 3 }}>{o.pct}%</div>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </Card>
+      );
+    };
+
+    // ============================================================
+    // MAIN APP — combines Feed View + Detail View
+    // ============================================================
+    function App() {
+      const [view, setView] = useState("feed");
+      const [feedChip, setFeedChip] = useState("all");
+      const [detailSection, setDetailSection] = useState("predictions");
+      const scrollRef = useRef(null);
+
+      return (
+        <div style={{ maxWidth: 390, margin: "0 auto", background: C.bg, minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", position: "relative", overflow: "hidden" }}>
+          {/* ——— Status bar ——— */}
+          <div style={{ background: C.primary, padding: "6px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>12:30</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <span style={{ color: "#fff", fontSize: 10 }}>📶</span>
+              <span style={{ color: "#fff", fontSize: 10 }}>🔋</span>
+            </div>
+          </div>
+
+          {/* ——— Header ——— */}
+          <div style={{ background: C.primary, padding: "8px 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 15, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 14 }}>⚡</span>
+            </div>
+            <div style={{ flex: 1, background: "rgba(255,255,255,.15)", borderRadius: 20, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+              <Icon d={Icons.search} size={14} color="rgba(255,255,255,.6)" />
+              <span style={{ color: "rgba(255,255,255,.5)", fontSize: 13 }}>Search Sofascore</span>
+            </div>
+            <div style={{ width: 30, height: 30, borderRadius: 15, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon d={Icons.user} size={16} color="#fff" />
+            </div>
+          </div>
+
+          {/* ——— View toggle ——— */}
+          <div style={{ background: "#fff", display: "flex", borderBottom: `1px solid ${C.border}` }}>
+            {[
+              { key: "feed", label: "📱 Feed View", desc: "New cards in real feed" },
+              { key: "detail", label: "🔍 Detail View", desc: "Isolated concepts" },
+            ].map((v) => (
+              <button key={v.key} onClick={() => setView(v.key)} style={{ flex: 1, padding: "10px 8px", background: view === v.key ? C.primaryLight : "#fff", border: "none", borderBottom: view === v.key ? `2px solid ${C.primary}` : "2px solid transparent", cursor: "pointer", textAlign: "center" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: view === v.key ? C.primary : C.text }}>{v.label}</div>
+                <div style={{ fontSize: 10, color: C.sub }}>{v.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* ——— Scrollable content ——— */}
+          <div ref={scrollRef} style={{ height: "calc(100vh - 190px)", overflowY: "auto", overflowX: "hidden", paddingBottom: 70 }}>
+
+            {/* ============ FEED VIEW ============ */}
+            {view === "feed" && (
+              <div>
+                {/* Buzzer rail */}
+                <BuzzerRail />
+
+                {/* Feed chips — now includes Predictions & Player Hubs */}
+                <div style={{ display: "flex", gap: 6, padding: "8px 16px", overflowX: "auto" }}>
+                  {[
+                    { key: "all", label: "Following" },
+                    { key: "predictions", label: "🎯 Predictions", color: C.orange },
+                    { key: "hubs", label: "👤 Player Hubs", color: C.primary },
+                    { key: "trending", label: "Trending" },
+                    { key: "country", label: "🇭🇷" },
+                  ].map((c) => (
+                    <Chip key={c.key} label={c.label} active={feedChip === c.key} onClick={() => setFeedChip(c.key)} color={c.color} />
+                  ))}
+                </div>
+
+                {/* Feed content — mixed existing + new cards */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "8px 0" }}>
+                  {/* Existing: Match recap */}
+                  <MatchRecapCard home="Brentford" away="Man City" score="0 - 2" league="England, Premier League" round="Round 22" date="26.10.2024 · 21:00" />
+
+                  {/* ★ NEW: Who Will Win poll */}
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", top: 8, left: 16, zIndex: 1 }}>
+                      <div style={{ background: C.primary, color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>NEW CONCEPT</div>
+                    </div>
+                    <WhoWillWinCard />
+                  </div>
+
+                  {/* Existing: Spotlight */}
+                  <SpotlightCard />
+
+                  {/* ★ NEW: Prediction card in feed */}
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", top: 8, left: 16, zIndex: 1 }}>
+                      <div style={{ background: C.orange, color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>NEW CONCEPT</div>
+                    </div>
+                    <PredictionCard />
+                  </div>
+
+                  {/* Existing: News */}
+                  <NewsCard title="Champions League quarter-final draw: Barcelona face Arsenal" source="UEFA.com · 2h ago" />
+
+                  {/* ★ NEW: Player Hub card */}
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", top: 8, left: 16, zIndex: 1 }}>
+                      <div style={{ background: C.primary, color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>NEW CONCEPT</div>
+                    </div>
+                    <PlayerHubCard />
+                  </div>
+
+                  {/* Existing: Another match */}
+                  <MatchRecapCard home="Arsenal" away="Liverpool" score="2 - 1" league="England, Premier League" round="Round 23" date="27.10.2024 · 17:30" />
+
+                  {/* Another prediction */}
+                  <WhoWillWinCard />
+
+                  <div style={{ padding: "20px 16px", textAlign: "center" }}>
+                    <div style={{ fontSize: 13, color: C.sub }}>Scroll up for more — this is a prototype preview</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ============ DETAIL VIEW ============ */}
+            {view === "detail" && (
+              <div>
+                {/* Section selector */}
+                <div style={{ display: "flex", gap: 6, padding: "12px 16px", overflowX: "auto" }}>
+                  {[
+                    { key: "predictions", label: "🎯 Predictions", color: C.orange },
+                    { key: "playerhub", label: "👤 Player Hub", color: C.primary },
+                  ].map((s) => (
+                    <Chip key={s.key} label={s.label} active={detailSection === s.key} onClick={() => setDetailSection(s.key)} color={s.color} />
+                  ))}
+                </div>
+
+                {detailSection === "predictions" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 0 24px" }}>
+                    {/* Explanation header */}
+                    <div style={{ margin: "0 16px", padding: "14px 16px", background: C.orangeLight, borderRadius: 10 }}>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: C.orange, marginBottom: 4 }}>🎯 User Predictions</div>
+                      <div style={{ fontSize: 12, color: C.text, lineHeight: 1.4 }}>
+                        Users select matches, pick outcomes, and back them with Sofascore stats. Predictions are timestamped and locked before kickoff. Others upvote/downvote. Profile tracks hit rate and streaks.
+                      </div>
+                    </div>
+
+                    {/* Feed chip filters */}
+                    <div style={{ padding: "0 16px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 8, textTransform: "uppercase" }}>Feed Chip Filters</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <Chip label="🆕 New" active />
+                        <Chip label="🔥 Trending" />
+                        <Chip label="⚡ Live" />
+                        <Chip label="✅ Results" />
+                      </div>
+                    </div>
+
+                    {/* Prediction in feed */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Card: Prediction in Feed</div>
+                      </div>
+                      <PredictionCard />
+                    </div>
+
+                    {/* Who will win compact */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Card: Who Will Win (Community Poll)</div>
+                      </div>
+                      <WhoWillWinCard />
+                    </div>
+
+                    {/* Creation flow */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Flow: Create Prediction (tap through steps)</div>
+                      </div>
+                      <PredictionCreator />
+                    </div>
+
+                    {/* Profile card */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Card: User Profile — Prediction Stats</div>
+                      </div>
+                      <PredictionProfileCard />
+                    </div>
+
+                    {/* Shareable card mockup */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Shareable: Prediction Results (IG Story / WA)</div>
+                      </div>
+                      <Card style={{ margin: "0 8px", overflow: "hidden" }}>
+                        <div style={{ background: "linear-gradient(135deg, #1A1A2E 0%, #374DF5 100%)", padding: "24px 20px", textAlign: "center" }}>
+                          <div style={{ fontSize: 10, color: "rgba(255,255,255,.5)", letterSpacing: 2, fontWeight: 700 }}>SOFASCORE PREDICTIONS</div>
+                          <Avatar name="Luka D" size={52} bg="linear-gradient(135deg, #F5A623, #FF6B6B)" color="#fff" style={{ margin: "12px auto" }} />
+                          <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>Luka D</div>
+                          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 16 }}>
+                            <div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: C.gold }}>72%</div>
+                              <div style={{ fontSize: 10, color: "rgba(255,255,255,.6)" }}>HIT RATE</div>
+                            </div>
+                            <div style={{ width: 1, background: "rgba(255,255,255,.2)" }} />
+                            <div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>🔥 5</div>
+                              <div style={{ fontSize: 10, color: "rgba(255,255,255,.6)" }}>STREAK</div>
+                            </div>
+                            <div style={{ width: 1, background: "rgba(255,255,255,.2)" }} />
+                            <div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: C.green }}>156</div>
+                              <div style={{ fontSize: 10, color: "rgba(255,255,255,.6)" }}>TOTAL</div>
+                            </div>
+                          </div>
+                          <div style={{ marginTop: 16, padding: "8px 16px", background: "rgba(255,255,255,.1)", borderRadius: 8, display: "inline-block" }}>
+                            <span style={{ color: "rgba(255,255,255,.7)", fontSize: 11 }}>Latest: </span>
+                            <span style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>Arsenal 2-1 Liverpool ✅</span>
+                          </div>
+                          <div style={{ marginTop: 16, fontSize: 10, color: "rgba(255,255,255,.35)" }}>sofascore.com/predictions</div>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+
+                {detailSection === "playerhub" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 0 24px" }}>
+                    {/* Explanation */}
+                    <div style={{ margin: "0 16px", padding: "14px 16px", background: C.primaryLight, borderRadius: 10 }}>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: C.primary, marginBottom: 4 }}>👤 Player Hub</div>
+                      <div style={{ fontSize: 12, color: C.text, lineHeight: 1.4 }}>
+                        Users select a player and curate a hub card with stats, highlights, and linked events. Includes a per-player chat space. Cards appear in Feed and can be filtered via a dedicated chip.
+                      </div>
+                    </div>
+
+                    {/* Player hub as new chip */}
+                    <div style={{ padding: "0 16px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 8, textTransform: "uppercase" }}>New Feed Chip</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <Chip label="Following" />
+                        <Chip label="🎯 Predictions" />
+                        <Chip label="👤 Player Hubs" active color={C.primary} />
+                        <Chip label="Trending" />
+                      </div>
+                    </div>
+
+                    {/* Player Hub card — Stats tab */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Card: Player Hub (Stats tab)</div>
+                      </div>
+                      <PlayerHubCard />
+                    </div>
+
+                    {/* Multiple player hubs horizontal rail */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Section: Popular Player Hubs (horizontal rail)</div>
+                      </div>
+                      <SectionTitle icon="🔥" title="Popular Player Hubs" actionLabel="See all" />
+                      <div style={{ display: "flex", gap: 10, padding: "8px 16px", overflowX: "auto" }}>
+                        {[
+                          { name: "L. Yamal", team: "Barcelona", rating: 8.2, chatCount: 47 },
+                          { name: "J. Bellingham", team: "Real Madrid", rating: 7.9, chatCount: 63 },
+                          { name: "E. Haaland", team: "Man City", rating: 8.5, chatCount: 89 },
+                          { name: "B. Saka", team: "Arsenal", rating: 8.0, chatCount: 35 },
+                        ].map((p, i) => (
+                          <Card key={i} style={{ minWidth: 140, padding: "12px", textAlign: "center", border: `1px solid ${C.border}` }}>
+                            <Avatar name={p.name} size={44} bg={`linear-gradient(135deg, hsl(${i * 80}, 60%, 40%), hsl(${i * 80 + 30}, 70%, 50%))`} color="#fff" style={{ margin: "0 auto" }} />
+                            <div style={{ fontWeight: 700, fontSize: 13, color: C.dark, marginTop: 6 }}>{p.name}</div>
+                            <div style={{ fontSize: 11, color: C.sub }}>{p.team}</div>
+                            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 6 }}>
+                              <Badge text={p.rating.toString()} bg={C.greenLight} color={C.green} />
+                              <span style={{ fontSize: 11, color: C.sub }}>💬 {p.chatCount}</span>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* How it connects to events / teams / tournaments */}
+                    <div>
+                      <div style={{ padding: "0 16px 6px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Connection: Entity linking</div>
+                      </div>
+                      <Card style={{ margin: "0 8px", padding: "16px" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.dark, marginBottom: 10 }}>Hub connections for Lamine Yamal</div>
+                        {[
+                          { icon: "⚽", label: "Next match", val: "Barcelona vs Arsenal · Wed 21:00", type: "Event" },
+                          { icon: "🏟️", label: "Team", val: "FC Barcelona", type: "Team" },
+                          { icon: "🏆", label: "Tournaments", val: "La Liga, UCL, Copa del Rey", type: "Tournaments" },
+                          { icon: "🇪🇸", label: "National team", val: "Spain", type: "Team" },
+                        ].map((c, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
+                            <span style={{ fontSize: 18 }}>{c.icon}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11, color: C.sub }}>{c.label}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: C.dark }}>{c.val}</div>
+                            </div>
+                            <Badge text={c.type} bg={C.surface} color={C.sub} />
+                          </div>
+                        ))}
+                      </Card>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ——— Bottom nav ——— */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: `1px solid ${C.border}`, display: "flex", padding: "6px 0 14px", zIndex: 10 }}>
+            {[
+              { icon: "⚽", label: "Football" },
+              { icon: "⭐", label: "Favourites" },
+              { icon: "📰", label: "Feed", active: true },
+              { icon: "🎮", label: "Fantasy" },
+            ].map((tab) => (
+              <div key={tab.label} style={{ flex: 1, textAlign: "center", cursor: "pointer" }}>
+                <div style={{ fontSize: 20 }}>{tab.icon}</div>
+                <div style={{ fontSize: 10, fontWeight: tab.active ? 700 : 500, color: tab.active ? C.primary : C.sub, marginTop: 2 }}>{tab.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>

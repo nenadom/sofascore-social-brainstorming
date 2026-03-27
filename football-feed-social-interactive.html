@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Fan Feed — Social & Interactive Layer</title>
+<style>
+  :root {
+    --bg: #0F0F13;
+    --surface: #1A1A24;
+    --surface2: #22222F;
+    --surface3: #2A2A3A;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --green: #00E676;
+    --green-dim: #00C85330;
+    --blue: #448AFF;
+    --blue-dim: #448AFF22;
+    --amber: #FFD740;
+    --amber-dim: #FFD74022;
+    --red: #FF5252;
+    --red-dim: #FF525222;
+    --purple: #E040FB;
+    --purple-dim: #E040FB22;
+    --text-primary: #F0F0F8;
+    --text-secondary: rgba(240,240,248,0.55);
+    --text-tertiary: rgba(240,240,248,0.35);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  /* ═══════════════════════════════════════ HEADER */
+  .page-header {
+    background: linear-gradient(160deg, #0D1B2A 0%, #1A0D2E 50%, #0D1B2A 100%);
+    padding: 60px 48px 52px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::after {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(68,138,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(68,138,255,0.15);
+    border: 1px solid rgba(68,138,255,0.3);
+    color: var(--blue);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .page-header h1 {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #F0F0F8 0%, rgba(240,240,248,0.6) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .page-header p {
+    color: var(--text-secondary);
+    font-size: 17px;
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  /* ═══════════════════════════════════════ LAYOUT */
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 40px; }
+  .section { padding: 56px 0 20px; }
+  .section-eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 10px;
+  }
+  .section h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+  .section .subtitle {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+
+  /* ═══════════════════════════════════════ FEATURES GRID */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .feature-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .feature-icon {
+    font-size: 26px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .feature-tag {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+  .ft-live { background: rgba(0,230,118,0.15); color: var(--green); }
+  .ft-pre { background: rgba(68,138,255,0.15); color: var(--blue); }
+  .ft-post { background: rgba(255,215,64,0.15); color: var(--amber); }
+  .ft-all { background: rgba(224,64,251,0.15); color: var(--purple); }
+
+  /* ═══════════════════════════════════════ DEMO AREA */
+  .demo-wrap {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .demo-phone {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 24px;
+  }
+  .phone-bar {
+    background: var(--surface2);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .phone-bar .score-pill {
+    background: var(--green);
+    color: #000;
+    font-size: 13px;
+    font-weight: 900;
+    padding: 5px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+  .phone-bar .live-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .phone-bar .watchers {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .feed-cards { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ─── Feed Card Base */
+  .feed-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .feed-card:hover { border-color: var(--border2); }
+
+  /* ─── Goal Card */
+  .goal-card {
+    border-color: rgba(0,230,118,0.25) !important;
+    background: linear-gradient(135deg, rgba(0,230,118,0.06) 0%, var(--surface2) 60%);
+  }
+  .goal-header {
+    padding: 12px 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .goal-badge {
+    background: var(--green);
+    color: #000;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+  }
+  .goal-minute {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .goal-body { padding: 10px 14px 14px; }
+  .goal-scorer {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    margin-bottom: 2px;
+  }
+  .goal-assist { font-size: 12px; color: var(--text-secondary); }
+
+  /* ─── Reaction Bar */
+  .reaction-bar {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .reaction-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-secondary);
+    user-select: none;
+  }
+  .reaction-btn:hover { background: var(--surface); border-color: var(--border2); }
+  .reaction-btn.active { border-color: var(--green); background: rgba(0,230,118,0.12); color: var(--text-primary); }
+  .reaction-btn.active .rcount { color: var(--green); }
+  .reaction-btn .rcount { font-size: 11px; font-weight: 600; min-width: 16px; }
+
+  .add-reaction-btn {
+    background: none;
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    transition: all 0.15s;
+  }
+  .add-reaction-btn:hover { border-color: var(--border2); color: var(--text-secondary); }
+
+  /* ─── Poll Card */
+  .poll-card .poll-header {
+    padding: 12px 14px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .poll-header .poll-icon { font-size: 16px; }
+  .poll-header .poll-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  .poll-header .poll-voters {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .poll-question {
+    padding: 0 14px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .poll-options { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 7px; }
+  .poll-option {
+    position: relative;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .poll-option:hover { border-color: var(--border2); }
+  .poll-option.voted { border-color: var(--amber); }
+  .poll-option.voted.winner { border-color: var(--green); }
+  .poll-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 8px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    z-index: 0;
+  }
+  .fill-amber { background: rgba(255,215,64,0.12); }
+  .fill-green { background: rgba(0,230,118,0.1); }
+  .fill-blue { background: rgba(68,138,255,0.1); }
+  .fill-red { background: rgba(255,82,82,0.1); }
+  .poll-option-text, .poll-option-pct {
+    position: relative; z-index: 1;
+    font-size: 13px;
+  }
+  .poll-option-text { font-weight: 500; }
+  .poll-option-pct { font-size: 12px; font-weight: 700; color: var(--text-tertiary); }
+  .poll-option.voted .poll-option-pct { color: var(--amber); }
+  .poll-option.voted.winner .poll-option-pct { color: var(--green); }
+
+  /* ─── Prediction Card */
+  .prediction-card .pred-header {
+    padding: 12px 14px 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pred-header .pred-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--purple);
+  }
+  .pred-header .pred-deadline {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .pred-body { padding: 0 14px 14px; }
+  .pred-teams {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pred-team { font-size: 14px; font-weight: 700; flex: 1; }
+  .pred-team:last-child { text-align: right; }
+  .pred-vs {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-weight: 600;
+  }
+  .pred-score-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .score-input {
+    width: 52px; height: 52px;
+    background: var(--surface3);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none;
+  }
+  .score-input:hover { border-color: var(--purple); background: rgba(224,64,251,0.08); }
+  .score-input.selected { border-color: var(--purple); background: rgba(224,64,251,0.12); color: var(--purple); }
+  .score-dash { font-size: 20px; color: var(--text-tertiary); font-weight: 700; }
+  .pred-community {
+    display: flex;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .pred-pct-bar {
+    display: flex;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .ppb-home { background: var(--blue); }
+  .ppb-draw { background: rgba(255,255,255,0.2); }
+  .ppb-away { background: var(--red); }
+  .pred-pct-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .pred-pct-labels span:nth-child(2) { color: var(--text-secondary); font-weight: 600; }
+  .pred-submit-btn {
+    width: 100%;
+    background: var(--purple);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .pred-submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .pred-submit-btn:active { transform: scale(0.98); }
+  .pred-submitted {
+    width: 100%;
+    background: rgba(0,230,118,0.15);
+    color: var(--green);
+    border: 1px solid rgba(0,230,118,0.3);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* ─── Fan Pulse */
+  .pulse-card .pulse-header {
+    padding: 12px 14px 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pulse-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+  .pulse-count { margin-left: auto; font-size: 11px; color: var(--text-tertiary); }
+  .pulse-body { padding: 0 14px 14px; }
+  .pulse-question { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+  .pulse-slider-wrap { padding: 4px 0 10px; }
+  .pulse-track {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(90deg, var(--red) 0%, rgba(255,255,255,0.15) 50%, var(--green) 100%);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .pulse-thumb {
+    position: absolute;
+    top: 50%; transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+    cursor: grab;
+  }
+  .pulse-labels {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--text-tertiary);
+  }
+  .pulse-community-bar {
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .pcb-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--red), var(--green));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .pulse-avg { font-size: 11px; color: var(--text-tertiary); text-align: center; }
+
+  /* ─── Debate Card */
+  .debate-card { border-color: rgba(255,82,82,0.25) !important; }
+  .debate-header {
+    padding: 12px 14px 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .debate-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--red);
+  }
+  .debate-question { padding: 0 14px 12px; font-size: 14px; font-weight: 700; line-height: 1.4; }
+  .debate-buttons { padding: 0 12px 12px; display: flex; gap: 8px; }
+  .debate-btn {
+    flex: 1; padding: 10px 6px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.15s;
+    text-align: center;
+    user-select: none;
+  }
+  .debate-agree {
+    background: rgba(0,230,118,0.08);
+    border-color: rgba(0,230,118,0.3);
+    color: var(--green);
+  }
+  .debate-agree:hover { background: rgba(0,230,118,0.15); }
+  .debate-disagree {
+    background: rgba(255,82,82,0.08);
+    border-color: rgba(255,82,82,0.3);
+    color: var(--red);
+  }
+  .debate-disagree:hover { background: rgba(255,82,82,0.15); }
+  .debate-voted { font-size: 12px; color: var(--text-secondary); padding: 0 14px 12px; display: none; }
+
+  /* ─── Comment Strip */
+  .comment-strip {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .comment-avatars { display: flex; }
+  .avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid var(--surface2);
+    margin-left: -5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .comment-avatars .avatar:first-child { margin-left: 0; }
+  .comment-count-text { font-size: 12px; color: var(--text-secondary); }
+  .comment-input-fake {
+    flex: 1;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    cursor: text;
+    transition: border-color 0.15s;
+  }
+  .comment-input-fake:hover { border-color: var(--border2); color: var(--text-secondary); }
+
+  /* ─── Leaderboard Card */
+  .leaderboard-mini .lb-header {
+    padding: 12px 14px 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lb-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
+  .lb-rows { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface3);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .lb-rank { font-size: 11px; font-weight: 800; color: var(--text-tertiary); min-width: 16px; }
+  .lb-rank.gold { color: #FFD740; }
+  .lb-rank.silver { color: #B0BEC5; }
+  .lb-rank.bronze { color: #FF8A65; }
+  .lb-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .lb-name { flex: 1; font-weight: 500; }
+  .lb-pts { font-weight: 700; color: var(--amber); font-size: 12px; }
+  .lb-streak { font-size: 10px; }
+
+  /* ═══════════════════════════════════════ RIGHT PANEL - DESCRIPTIONS */
+  .demo-descriptions { display: flex; flex-direction: column; gap: 20px; padding-top: 4px; }
+  .desc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    position: relative;
+  }
+  .desc-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 20px; bottom: 20px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+  }
+  .dc-green::before { background: var(--green); }
+  .dc-amber::before { background: var(--amber); }
+  .dc-purple::before { background: var(--purple); }
+  .dc-red::before { background: var(--red); }
+  .dc-blue::before { background: var(--blue); }
+
+  .desc-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .desc-card p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+  .desc-card .phase-tags { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .ptag {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 9px; border-radius: 20px;
+  }
+
+  /* ═══════════════════════════════════════ SOCIAL PRINCIPLES */
+  .principles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .principle {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    display: flex;
+    gap: 16px;
+  }
+  .principle-num {
+    font-size: 24px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.08);
+    line-height: 1;
+    min-width: 30px;
+    flex-shrink: 0;
+  }
+  .principle h3 { font-size: 15px; font-weight: 700; margin-bottom: 7px; }
+  .principle p { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+  /* ═══════════════════════════════════════ HANGOUT MOMENTS */
+  .moments-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .moment-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .moment-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .moment-emoji { font-size: 30px; margin-bottom: 10px; display: block; }
+  .moment-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .moment-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .moment-trigger {
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  /* ═══════════════════════════════════════ CONTENT CADENCE */
+  .cadence-row {
+    display: grid;
+    grid-template-columns: 140px repeat(3, 1fr);
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .cadence-cell {
+    padding: 14px 16px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .cadence-cell:last-child { border-right: none; }
+  .cadence-row:last-child .cadence-cell { border-bottom: none; }
+  .cadence-header .cadence-cell {
+    background: var(--surface3);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 12px 16px;
+  }
+  .cadence-label {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.02);
+  }
+  .dot-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .dot.on { background: var(--green); }
+  .dot.dim { background: rgba(0,230,118,0.3); }
+
+  /* ═══════════════════════════════════════ FOOTER */
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    padding: 28px 32px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: 80px;
+  }
+
+  /* ═══════════════════════════════════════ TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 30px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 1000;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════ HEADER -->
+<div class="page-header">
+  <div class="container">
+    <div class="tag">🤝 Social &amp; Interactive Layer</div>
+    <h1>Make the Feed a Place<br>Fans Want to Hang Out</h1>
+    <p>Beyond scores and stats — a social layer that turns passive consumption into active participation, and turns a feed into a community.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ═══════════════════ WHAT SOCIAL ADDS -->
+  <div class="section">
+    <div class="section-eyebrow">Social Features</div>
+    <h2>Six interactive building blocks</h2>
+    <p class="subtitle">Each feature meets fans at a specific emotional moment in the game journey.</p>
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Moment Reactions</h3>
+        <p>Emoji reactions on any feed card — goals, red cards, VAR decisions. One tap to express exactly how you feel in that moment. Counts update live across all fans watching.</p>
+        <span class="feature-tag ft-live">Live</span>
+        <span class="feature-tag ft-post">Post-game</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🗳️</span>
+        <h3>Live Polls</h3>
+        <p>Real-time polls tied to game moments — MOTM votes, VAR opinion, tactical calls. Triggered automatically at natural moments (half-time, red card, final whistle).</p>
+        <span class="feature-tag ft-live">Live</span>
+        <span class="feature-tag ft-post">Post-game</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🔮</span>
+        <h3>Prediction Game</h3>
+        <p>Pre-game score and scorer predictions, ranked against the fan community. Weekly and seasonal leaderboards build long-term engagement and friendly rivalry.</p>
+        <span class="feature-tag ft-pre">Pre-game</span>
+        <span class="feature-tag ft-all">All phases</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🌡️</span>
+        <h3>Fan Pulse</h3>
+        <p>A sliding confidence meter — "how are you feeling about this?" Updated live during the game. Shows aggregate fan sentiment as a community mood gauge.</p>
+        <span class="feature-tag ft-live">Live</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🔥</span>
+        <h3>Debate Cards</h3>
+        <p>Auto-generated "hot take" prompts after controversial moments. Agree / Disagree with a single tap, see how your opinion compares to the rest of the fanbase instantly.</p>
+        <span class="feature-tag ft-live">Live</span>
+        <span class="feature-tag ft-post">Post-game</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">💬</span>
+        <h3>Moment Comments</h3>
+        <p>Quick threaded reactions anchored to specific feed cards. Not a global chat — contextual reactions to exactly the moment that prompted the feeling.</p>
+        <span class="feature-tag ft-live">Live</span>
+        <span class="feature-tag ft-post">Post-game</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════ INTERACTIVE DEMO -->
+  <div class="section">
+    <div class="section-eyebrow">Interactive Prototype</div>
+    <h2>How the feed feels — try it</h2>
+    <p class="subtitle">Click, vote, react. Every card below is interactive.</p>
+
+    <div class="demo-wrap">
+
+      <!-- LEFT: PHONE MOCKUP -->
+      <div class="demo-phone">
+        <div class="phone-bar">
+          <div class="live-badge"><div class="live-dot"></div> LIVE · 67'</div>
+          <div class="score-pill">MAN UTD &nbsp;2 – 1&nbsp; ARSENAL</div>
+          <div class="watchers">👁 84.2k</div>
+        </div>
+
+        <div class="feed-cards">
+
+          <!-- GOAL CARD with reactions -->
+          <div class="feed-card goal-card">
+            <div class="goal-header">
+              <span class="goal-badge">⚽ GOAL</span>
+              <span class="goal-minute">62'</span>
+            </div>
+            <div class="goal-body">
+              <div class="goal-scorer">Bruno Fernandes</div>
+              <div class="goal-assist">Assist: Rashford · Tap the feeling below ↓</div>
+            </div>
+            <div class="reaction-bar" id="goalReactions">
+              <button class="reaction-btn" onclick="react(this,'goal','🔥')">🔥 <span class="rcount">3.2k</span></button>
+              <button class="reaction-btn" onclick="react(this,'goal','🎉')">🎉 <span class="rcount">2.8k</span></button>
+              <button class="reaction-btn" onclick="react(this,'goal','😱')">😱 <span class="rcount">1.1k</span></button>
+              <button class="reaction-btn" onclick="react(this,'goal','💔')">💔 <span class="rcount">891</span></button>
+              <button class="add-reaction-btn" onclick="showToast('Custom reaction coming soon!')">+</button>
+            </div>
+            <div class="comment-strip">
+              <div class="comment-avatars">
+                <div class="avatar" style="background:#3949AB">JK</div>
+                <div class="avatar" style="background:#C62828">AM</div>
+                <div class="avatar" style="background:#2E7D32">TF</div>
+              </div>
+              <span class="comment-count-text" style="font-size:11px; margin-right:auto;">+247 reactions</span>
+              <div class="comment-input-fake">Add your take…</div>
+            </div>
+          </div>
+
+          <!-- POLL CARD -->
+          <div class="feed-card poll-card" id="pollCard">
+            <div class="poll-header">
+              <span class="poll-icon">🗳️</span>
+              <span class="poll-label">Live Poll</span>
+              <span class="poll-voters" id="pollVoters">12,847 votes</span>
+            </div>
+            <div class="poll-question">Who's been Man United's best player so far?</div>
+            <div class="poll-options">
+              <div class="poll-option" id="opt1" onclick="vote(1)" data-pct="44" data-fill="fill-green">
+                <div class="poll-fill fill-green" style="width:0%"></div>
+                <span class="poll-option-text">Bruno Fernandes</span>
+                <span class="poll-option-pct" id="pct1">44%</span>
+              </div>
+              <div class="poll-option" id="opt2" onclick="vote(2)" data-pct="31" data-fill="fill-amber">
+                <div class="poll-fill fill-amber" style="width:0%"></div>
+                <span class="poll-option-text">Marcus Rashford</span>
+                <span class="poll-option-pct" id="pct2">31%</span>
+              </div>
+              <div class="poll-option" id="opt3" onclick="vote(3)" data-pct="15" data-fill="fill-blue">
+                <div class="poll-fill fill-blue" style="width:0%"></div>
+                <span class="poll-option-text">Kobbie Mainoo</span>
+                <span class="poll-option-pct" id="pct3">15%</span>
+              </div>
+              <div class="poll-option" id="opt4" onclick="vote(4)" data-pct="10" data-fill="fill-red">
+                <div class="poll-fill fill-red" style="width:0%"></div>
+                <span class="poll-option-text">André Onana</span>
+                <span class="poll-option-pct" id="pct4">10%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FAN PULSE -->
+          <div class="feed-card pulse-card">
+            <div class="pulse-header">
+              <span>🌡️</span>
+              <span class="pulse-label">Fan Pulse</span>
+              <span class="pulse-count">62,341 fans</span>
+            </div>
+            <div class="pulse-body">
+              <div class="pulse-question">How confident are you feeling right now?</div>
+              <div class="pulse-slider-wrap">
+                <div class="pulse-track" id="pulseTrack" onclick="setPulse(event)">
+                  <div class="pulse-thumb" id="pulseThumb" style="left: 65%"></div>
+                </div>
+                <div class="pulse-labels">
+                  <span>😰 Worried</span>
+                  <span>😐 Neutral</span>
+                  <span>🔥 Flying</span>
+                </div>
+              </div>
+              <div class="pulse-community-bar">
+                <div class="pcb-fill" id="pcbFill" style="width: 68%"></div>
+              </div>
+              <div class="pulse-avg" id="pulseAvg">Community avg: 68% confident — click the bar above to share yours</div>
+            </div>
+          </div>
+
+          <!-- DEBATE CARD -->
+          <div class="feed-card debate-card" id="debateCard">
+            <div class="debate-header">
+              <span>🔥</span>
+              <span class="debate-label">Hot Debate</span>
+            </div>
+            <div class="debate-question">"Saka's yellow card was harsh — that was never a foul."</div>
+            <div class="debate-buttons">
+              <div class="debate-btn debate-agree" onclick="debate('agree')">👍 Agree</div>
+              <div class="debate-btn debate-disagree" onclick="debate('disagree')">👎 Disagree</div>
+            </div>
+            <div class="debate-voted" id="debateResult"></div>
+          </div>
+
+          <!-- PREDICTION CARD -->
+          <div class="feed-card prediction-card">
+            <div class="pred-header">
+              <span>🔮</span>
+              <span class="pred-label">Pre-match Prediction</span>
+              <span class="pred-deadline">⏱ Deadline passed</span>
+            </div>
+            <div class="pred-body">
+              <div class="pred-teams">
+                <div class="pred-team">Man Utd</div>
+                <div class="pred-vs">vs</div>
+                <div class="pred-team">Arsenal</div>
+              </div>
+              <div class="pred-score-inputs">
+                <div class="score-input selected" id="predHome">2</div>
+                <div class="score-dash">–</div>
+                <div class="score-input" id="predAway">1</div>
+              </div>
+              <div class="pred-pct-bar">
+                <div class="ppb-home" style="width:38%"></div>
+                <div class="ppb-draw" style="width:22%"></div>
+                <div class="ppb-away" style="width:40%"></div>
+              </div>
+              <div class="pred-pct-labels">
+                <span>🔵 38% Utd win</span>
+                <span>22% Draw</span>
+                <span>40% Arsenal 🔴</span>
+              </div>
+              <div style="margin-top:10px; background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2); border-radius:8px; padding:8px 10px; font-size:12px; color:var(--green); text-align:center;">
+                ✅ Your prediction: <strong>2–1 to Man Utd</strong> · Currently on track! 🎯
+              </div>
+            </div>
+          </div>
+
+          <!-- LEADERBOARD MINI -->
+          <div class="feed-card leaderboard-mini">
+            <div class="lb-header">
+              <span>🏆</span>
+              <span class="lb-label">Prediction League</span>
+            </div>
+            <div class="lb-rows">
+              <div class="lb-row">
+                <div class="lb-rank gold">1</div>
+                <div class="lb-avatar" style="background:#1A237E; color:white">PK</div>
+                <div class="lb-name">PetraK</div>
+                <div class="lb-pts">847 pts</div>
+                <div class="lb-streak">🔥7</div>
+              </div>
+              <div class="lb-row">
+                <div class="lb-rank silver">2</div>
+                <div class="lb-avatar" style="background:#880E4F; color:white">FM</div>
+                <div class="lb-name">FootballMike</div>
+                <div class="lb-pts">821 pts</div>
+                <div class="lb-streak">🔥4</div>
+              </div>
+              <div class="lb-row" style="border:1px solid rgba(68,138,255,0.3); background: rgba(68,138,255,0.06); border-radius:8px;">
+                <div class="lb-rank" style="color:var(--blue)">14</div>
+                <div class="lb-avatar" style="background:#4A148C; color:white">YO</div>
+                <div class="lb-name" style="color:var(--blue)">You</div>
+                <div class="lb-pts" style="color:var(--blue)">612 pts</div>
+                <div class="lb-streak">🔥2</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /feed-cards -->
+      </div><!-- /demo-phone -->
+
+      <!-- RIGHT: DESCRIPTIONS -->
+      <div class="demo-descriptions">
+
+        <div class="desc-card dc-green">
+          <h3>⚽ Moment Reactions</h3>
+          <p>Each key event card carries a reaction strip — five curated emojis plus a custom option. Counts update live in real time. Fans can see the emotional wave of the community as a goal goes in. Tapping twice removes your reaction.</p>
+          <div class="phase-tags">
+            <span class="ptag" style="background:rgba(0,230,118,0.15); color:var(--green)">Live</span>
+            <span class="ptag" style="background:rgba(255,215,64,0.15); color:var(--amber)">Post-game</span>
+          </div>
+        </div>
+
+        <div class="desc-card dc-amber">
+          <h3>🗳️ Live Poll — Vote to see results</h3>
+          <p>Polls surface automatically at natural game moments: kickoff, half-time, big events, final whistle. Voting reveals the community result — your vote changes the live counts in real time. Polls are ephemeral: they expire and archive after the game.</p>
+          <div class="phase-tags">
+            <span class="ptag" style="background:rgba(0,230,118,0.15); color:var(--green)">Live</span>
+            <span class="ptag" style="background:rgba(255,215,64,0.15); color:var(--amber)">Post-game</span>
+          </div>
+        </div>
+
+        <div class="desc-card dc-red">
+          <h3>🌡️ Fan Pulse — Community sentiment</h3>
+          <p>A sliding confidence meter fans update throughout the game. The aggregate position shifts as the match evolves — a goal in the 90th minute sends it flying right. Great for editorial storytelling post-match: "Fan confidence hit its lowest point at 2–0 down."</p>
+          <div class="phase-tags">
+            <span class="ptag" style="background:rgba(0,230,118,0.15); color:var(--green)">Live only</span>
+          </div>
+        </div>
+
+        <div class="desc-card dc-red">
+          <h3>🔥 Debate Cards — Instant hot takes</h3>
+          <p>Auto-generated after controversial moments (VAR overturned, red card, dubious penalty). Single-tap Agree/Disagree with instant result reveal. The simplicity makes it frictionless — no typing, maximum engagement at moments of peak emotion.</p>
+          <div class="phase-tags">
+            <span class="ptag" style="background:rgba(0,230,118,0.15); color:var(--green)">Live</span>
+            <span class="ptag" style="background:rgba(255,215,64,0.15); color:var(--amber)">Post-game</span>
+          </div>
+        </div>
+
+        <div class="desc-card dc-purple">
+          <h3>🔮 Predictions + 🏆 Leaderboard</h3>
+          <p>Pre-match score and scorer predictions, locked at kickoff. Points awarded for correct outcomes, bonus for exact scores. A persistent Prediction League with weekly and season standings creates long-term retention — fans return game after game to protect their rank and their streak.</p>
+          <div class="phase-tags">
+            <span class="ptag" style="background:rgba(68,138,255,0.15); color:var(--blue)">Pre-game</span>
+            <span class="ptag" style="background:rgba(0,230,118,0.15); color:var(--green)">Live</span>
+            <span class="ptag" style="background:rgba(255,215,64,0.15); color:var(--amber)">Post-game</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ HANGOUT MOMENTS -->
+  <div class="section">
+    <div class="section-eyebrow">Hangout Moments</div>
+    <h2>Designed peak moments in every game</h2>
+    <p class="subtitle">Specific triggers in the game lifecycle that activate collective social experiences.</p>
+    <div class="moments-grid">
+
+      <div class="moment-card">
+        <span class="moment-emoji">🔮</span>
+        <h3>Prediction Lock</h3>
+        <p>Prediction window closes at kickoff with a countdown. Last-minute energy drives submissions.</p>
+        <div class="moment-trigger">Trigger: T–5 min</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">⚽</span>
+        <h3>Goal Eruption</h3>
+        <p>Full-screen reaction burst when a goal lands. Fan sentiment spikes visible in real time.</p>
+        <div class="moment-trigger">Trigger: Goal event</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">🟥</span>
+        <h3>Red Card Debate</h3>
+        <p>Auto-debate card fires: "Was that sending off fair?" Fans vote before they've stopped shouting.</p>
+        <div class="moment-trigger">Trigger: Red card event</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">🔁</span>
+        <h3>VAR Room</h3>
+        <p>Dedicated VAR card with live community prediction: Overturned or Stands? Result locks when decision drops.</p>
+        <div class="moment-trigger">Trigger: VAR check event</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">☕</span>
+        <h3>Half-Time Hub</h3>
+        <p>MOTM poll, tactical question, and fan sentiment summary. 15-minute social window designed for engagement.</p>
+        <div class="moment-trigger">Trigger: Half-time whistle</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">🏁</span>
+        <h3>Final Whistle Drop</h3>
+        <p>Full-time summary card + player ratings vote unlocks. Fans rate every player in 10 seconds.</p>
+        <div class="moment-trigger">Trigger: Full time</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">⭐</span>
+        <h3>MOTM Vote</h3>
+        <p>Community votes on Man of the Match. Contrasting with official rating — shows where fans disagree.</p>
+        <div class="moment-trigger">Trigger: Final whistle</div>
+      </div>
+
+      <div class="moment-card">
+        <span class="moment-emoji">🎯</span>
+        <h3>Prediction Reveal</h3>
+        <p>Prediction results published with leaderboard update. Streak animations, points breakdown, rank change.</p>
+        <div class="moment-trigger">Trigger: Full time + 2 min</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════ SOCIAL DESIGN PRINCIPLES -->
+  <div class="section">
+    <div class="section-eyebrow">Social Design Principles</div>
+    <h2>Rules that keep the community healthy and fun</h2>
+    <p class="subtitle">Social features can go wrong fast. These principles prevent that.</p>
+    <div class="principles-grid">
+
+      <div class="principle">
+        <div class="principle-num">01</div>
+        <div>
+          <h3>One-tap minimum effort</h3>
+          <p>Every social interaction must be completable in one tap. No text required to participate. Football is fast — if voting takes more than a second, fans won't bother at the moment that counts.</p>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="principle-num">02</div>
+        <div>
+          <h3>Results as reward</h3>
+          <p>Never hide the community result until after the fan has participated. Show them what everyone else thought — that's the payoff. The reveal is the dopamine hit that brings them back next time.</p>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="principle-num">03</div>
+        <div>
+          <h3>Context-anchored, not free-form</h3>
+          <p>No global chat. Social interactions attach to specific cards and moments. This keeps conversations focused, prevents toxicity, and makes every reaction meaningful rather than noise.</p>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="principle-num">04</div>
+        <div>
+          <h3>Feed learns from your behaviour</h3>
+          <p>What you react to, vote on, and predict trains the feed's understanding of your depth. A fan who only hits reactions stays casual. A fan who uses all features gets deeper content surfaced automatically.</p>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="principle-num">05</div>
+        <div>
+          <h3>Ephemeral live, persistent legacy</h3>
+          <p>Live interactions (pulse, live polls) disappear after the game — they're of the moment. But predictions, ratings, and leaderboard scores persist and build a personal history that gives fans something to own long-term.</p>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="principle-num">06</div>
+        <div>
+          <h3>Community size as signal, not noise</h3>
+          <p>Show fan counts and reaction volumes — "84k watching", "3.2k 🔥" — as social proof. Seeing others engaged makes any individual feel part of something bigger than their screen. Scale is the product.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════ CONTENT CADENCE -->
+  <div class="section">
+    <div class="section-eyebrow">Social Content Cadence</div>
+    <h2>When each social feature fires</h2>
+    <p class="subtitle">Automatic triggers ensure social moments land at peak fan emotion — never too early, never too late.</p>
+
+    <div class="cadence-row cadence-header">
+      <div class="cadence-cell">Feature</div>
+      <div class="cadence-cell" style="color: #90CAF9;">Pre-game</div>
+      <div class="cadence-cell" style="color: var(--green);">Live</div>
+      <div class="cadence-cell" style="color: var(--amber);">Post-game</div>
+    </div>
+
+    <div class="cadence-row">
+      <div class="cadence-cell cadence-label">🔮 Predictions</div>
+      <div class="cadence-cell"><span style="color:var(--blue); font-size:13px; font-weight:600;">Opens 72h before · closes at KO</span></div>
+      <div class="cadence-cell"><span style="color:var(--text-tertiary); font-size:12px;">Locked (shows current status)</span></div>
+      <div class="cadence-cell"><span style="color:var(--amber); font-size:13px; font-weight:600;">Result + leaderboard update</span></div>
+    </div>
+
+    <div class="cadence-row">
+      <div class="cadence-cell cadence-label">⚡ Reactions</div>
+      <div class="cadence-cell"><span style="color:var(--text-tertiary); font-size:12px;">Not active</span></div>
+      <div class="cadence-cell"><span style="color:var(--green); font-size:13px; font-weight:600;">Every goal, card, sub, VAR</span></div>
+      <div class="cadence-cell"><span style="color:var(--amber); font-size:13px; font-weight:600;">On match summary + ratings</span></div>
+    </div>
+
+    <div class="cadence-row">
+      <div class="cadence-cell cadence-label">🗳️ Live Polls</div>
+      <div class="cadence-cell"><span style="color:var(--blue); font-size:13px; font-weight:600;">Lineup drop ("Is this the right team?")</span></div>
+      <div class="cadence-cell"><span style="color:var(--green); font-size:13px; font-weight:600;">Half-time + big moments</span></div>
+      <div class="cadence-cell"><span style="color:var(--amber); font-size:13px; font-weight:600;">MOTM vote · 30 min post-game</span></div>
+    </div>
+
+    <div class="cadence-row">
+      <div class="cadence-cell cadence-label">🌡️ Fan Pulse</div>
+      <div class="cadence-cell"><span style="color:var(--text-tertiary); font-size:12px;">Not active</span></div>
+      <div class="cadence-cell"><span style="color:var(--green); font-size:13px; font-weight:600;">Continuous — updates after each event</span></div>
+      <div class="cadence-cell"><span style="color:var(--text-tertiary); font-size:12px;">Archived sentiment chart</span></div>
+    </div>
+
+    <div class="cadence-row">
+      <div class="cadence-cell cadence-label">🔥 Debate Cards</div>
+      <div class="cadence-cell"><span style="color:var(--text-tertiary); font-size:12px;">Not active</span></div>
+      <div class="cadence-cell"><span style="color:var(--green); font-size:13px; font-weight:600;">Red card · VAR · penalty decisions</span></div>
+      <div class="cadence-cell"><span style="color:var(--amber); font-size:13px; font-weight:600;">Controversial moment replays</span></div>
+    </div>
+
+    <div class="cadence-row">
+      <div class="cadence-cell cadence-label">💬 Comments</div>
+      <div class="cadence-cell"><span style="color:var(--blue); font-size:13px; font-weight:600;">On team news & lineup cards</span></div>
+      <div class="cadence-cell"><span style="color:var(--green); font-size:13px; font-weight:600;">Goal cards · key event cards</span></div>
+      <div class="cadence-cell"><span style="color:var(--amber); font-size:13px; font-weight:600;">Player ratings · match summary</span></div>
+    </div>
+
+  </div>
+
+  <div style="height: 20px;"></div>
+</div>
+
+<div class="footer">
+  Football Fan Feed — Social &amp; Interactive Layer &nbsp;·&nbsp; SofaScore &nbsp;·&nbsp; March 2026
+</div>
+
+<!-- ═══════════════════ JS -->
+<script>
+  // ── Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // ── Reactions
+  const reactionState = {};
+  function react(btn, group, emoji) {
+    const key = group + emoji;
+    const countEl = btn.querySelector('.rcount');
+    const currentCount = parseCount(countEl.textContent);
+
+    if (reactionState[key]) {
+      // Remove reaction
+      reactionState[key] = false;
+      btn.classList.remove('active');
+      countEl.textContent = formatCount(currentCount - 1);
+      showToast('Reaction removed');
+    } else {
+      // Add reaction
+      reactionState[key] = true;
+      btn.classList.add('active');
+      countEl.textContent = formatCount(currentCount + 1);
+      const messages = {
+        '🔥': 'You reacted 🔥 Fire!',
+        '🎉': 'You reacted 🎉 Celebrate!',
+        '😱': 'You reacted 😱 Unbelievable!',
+        '💔': 'You reacted 💔 Gutted.',
+      };
+      showToast(messages[emoji] || 'Reaction added!');
+    }
+  }
+
+  function parseCount(str) {
+    if (str.includes('k')) return Math.round(parseFloat(str) * 1000);
+    return parseInt(str);
+  }
+  function formatCount(n) {
+    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+    return n.toString();
+  }
+
+  // ── Poll
+  let pollVoted = false;
+  function vote(optionNum) {
+    if (pollVoted) return;
+    pollVoted = true;
+    const options = [1,2,3,4];
+    const pcts = {1:44, 2:31, 3:15, 4:10};
+
+    // Increase voted option slightly
+    pcts[optionNum] = pcts[optionNum] + 3;
+    // Re-normalise
+    const total = Object.values(pcts).reduce((a,b) => a+b, 0);
+    Object.keys(pcts).forEach(k => pcts[k] = Math.round(pcts[k]/total*100));
+
+    options.forEach(i => {
+      const el = document.getElementById('opt' + i);
+      const fill = el.querySelector('.poll-fill');
+      const pctEl = document.getElementById('pct' + i);
+      const pct = pcts[i];
+      fill.style.width = pct + '%';
+      pctEl.textContent = pct + '%';
+      el.style.cursor = 'default';
+      if (i === optionNum) {
+        el.classList.add('voted');
+        // Find winner
+        const maxPct = Math.max(...Object.values(pcts));
+        if (pct === maxPct) el.classList.add('winner');
+      }
+    });
+
+    // Update voter count
+    const vc = document.getElementById('pollVoters');
+    vc.textContent = '12,848 votes';
+    showToast('Vote counted! ✅');
+  }
+
+  // ── Fan Pulse
+  let pulseVoted = false;
+  function setPulse(e) {
+    const track = document.getElementById('pulseTrack');
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, Math.round((e.clientX - rect.left) / rect.width * 100)));
+    document.getElementById('pulseThumb').style.left = pct + '%';
+
+    const avgCombined = Math.round((68 * 62341 + pct) / 62342);
+    document.getElementById('pcbFill').style.width = avgCombined + '%';
+
+    let label = '';
+    if (pct < 30) label = `You're worried. Community avg: ${avgCombined}% confident.`;
+    else if (pct < 55) label = `Cautiously optimistic. Community avg: ${avgCombined}% confident.`;
+    else if (pct < 75) label = `Feeling good! Community avg: ${avgCombined}% confident.`;
+    else label = `Flying high 🔥 Community avg: ${avgCombined}% confident.`;
+
+    document.getElementById('pulseAvg').textContent = label;
+    if (!pulseVoted) { pulseVoted = true; showToast('Pulse updated — you\'re part of 62,342 fans!'); }
+  }
+
+  // ── Debate
+  let debateVoted = false;
+  function debate(side) {
+    if (debateVoted) return;
+    debateVoted = true;
+    const btns = document.querySelectorAll('.debate-btn');
+    btns.forEach(b => { b.style.opacity = '0.4'; b.style.cursor = 'default'; });
+
+    const resultEl = document.getElementById('debateResult');
+    resultEl.style.display = 'block';
+
+    if (side === 'agree') {
+      resultEl.innerHTML = '<span style="color:var(--green)">👍 You agree</span> · 71% agree · 29% disagree — most fans thought the card was harsh.';
+      showToast('71% of fans agree with you!');
+    } else {
+      resultEl.innerHTML = '<span style="color:var(--red)">👎 You disagree</span> · 71% agree · 29% disagree — you\'re in the minority here.';
+      showToast('You\'re with 29% on this one.');
+    }
+  }
+</script>
+</body>
+</html>
